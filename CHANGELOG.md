@@ -1,5 +1,16 @@
 # Changelog — Pimba
 
+## v1.2.0 — 2026-11-14
+Lotérica parceira ativada: Sorte Milionária Loterias (Goiânia/GO).
+- **Bloco da lotérica na home** (logo depois dos últimos resultados) e **na página `/boloes/`**, com endereço, link para o mapa, e-mail, CNPJ e razão social
+- **Botão "Comprar cota no Loterias CAIXA"**: leva ao canal oficial da CAIXA, onde o cliente compra a cota dos bolões da lotérica e recebe o recibo oficial. Enquanto não houver link direto da lotérica, abre o portal oficial com a instrução "entre em Bolões e escolha a Sorte Milionária Loterias"
+- Passo a passo "Como comprar sua cota" em `/boloes/`
+- O site **não vende cotas**: o build recusa qualquer `linkBoloesCaixa` que não seja de `*.caixa.gov.br`, e os avisos "não é a CAIXA, não vende cotas, +18" aparecem junto do bloco
+- Botões de WhatsApp da lotérica e do grupo de avisos aparecem sozinhos quando `whatsapp` e `grupoWhatsapp` forem preenchidos em `src/config.js`
+- Dados estruturados `Store` (SEO local) na página de bolões
+- Código do bloco separado em `scripts/parceiro.mjs`; 5 testes novos (20 no total)
+- Endereço tirado do cadastro público do CNPJ (Receita Federal). Faltam: horário, WhatsApp, grupo de avisos e link direto dos bolões no Loterias CAIXA
+
 ## v1.1.0 — 2026-11-14
 Estatísticas e calendário de sorteios.
 - **Estatísticas** (`/estatisticas/` e `/estatisticas/<loteria>/`, 9 loterias): números mais e menos sorteados, há mais tempo sem sair e mapa de frequência de todos os números nos últimos 10, 25, 50 ou 100 concursos. Inclui trevos (+Milionária), Mês de Sorte, Time do Coração, os dois sorteios da Dupla Sena e contagem por coluna no Super Sete

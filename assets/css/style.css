@@ -219,6 +219,11 @@ h3 { font-size: 1.15rem; margin: 1.2em 0 .5em; }
 .parceiro { background: var(--navy); color: #fff; border-radius: 20px; padding: 24px; margin: 24px 0; }
 .parceiro h2 { margin: 10px 0; }
 .parceiro .muted { color: #b9c1de; }
+.parceiro a:not(.btn) { color: var(--amarelo); }
+.parceiro h3 { margin: 22px 0 8px; }
+.parceiro-home { margin: 0; }
+.passos { padding-left: 22px; }
+.passos li { margin-bottom: 8px; }
 .texto p, .texto li { max-width: 70ch; }
 .numero-404 { font-size: 6rem; font-weight: 900; margin: 0; color: var(--amarelo-2); line-height: 1; }
 

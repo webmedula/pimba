@@ -7,6 +7,7 @@ import { LOTERIAS, POR_SLUG } from '../assets/js/loterias.js';
 import { esc, brl, fmtInt } from '../assets/js/render.js';
 import { JANELAS, JANELA_PADRAO, temEstatistica, seoEstatisticas } from '../assets/js/stats.js';
 import { DIAS, DIAS_CURTOS, SEMANA, sorteiosDoDia } from '../assets/js/datas.js';
+import { blocoParceiro, ldParceiro, parceiroAtivo, zap } from './parceiro.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = join(ROOT, 'dist');
@@ -31,7 +32,6 @@ function salvar(rota, html, { sitemap = true, prioridade = '0.6' } = {}) {
   if (sitemap) paginas.push({ rota, prioridade });
 }
 
-const zap = (num, msg) => `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
 
 // ---------- componentes ----------
 const NAV = [
@@ -204,6 +204,8 @@ salvar('/', layout({
   </div>
 </section>
 
+${blocoParceiro(SITE.parceiro, { variante: 'home' })}
+
 ${anuncio('home-meio')}
 
 <section class="secao secao-alt">
@@ -363,35 +365,20 @@ salvar('/gerador', layout({
 }), { prioridade: '0.8' });
 
 // ---------- BOLÕES ----------
-const p = SITE.parceiro;
-const blocoParceiro = p.ativo && p.nome
-  ? `<section class="parceiro">
-  <p class="selo">Lotérica parceira do Pimba</p>
-  <h2>${esc(p.nome)}</h2>
-  <ul class="fatos">
-    ${p.cidade ? `<li><strong>Cidade:</strong> ${esc(p.cidade)}</li>` : ''}
-    ${p.endereco ? `<li><strong>Endereço:</strong> ${esc(p.endereco)}</li>` : ''}
-    ${p.horario ? `<li><strong>Horário:</strong> ${esc(p.horario)}</li>` : ''}
-  </ul>
-  <div class="acoes">
-    ${p.linkBoloesCaixa ? `<a class="btn btn-primario" href="${esc(p.linkBoloesCaixa)}" target="_blank" rel="noopener">Ver bolões no Loterias CAIXA</a>` : ''}
-    ${p.whatsapp ? `<a class="btn btn-whats" href="${zap(p.whatsapp, 'Olá! Vim pelo Pimba e quero saber dos bolões desta semana.')}" target="_blank" rel="noopener">Falar no WhatsApp</a>` : ''}
-  </div>
-  <p class="muted small">Cotas vendidas pela própria lotérica, com recibo oficial da CAIXA. O Pimba apenas divulga.</p>
-</section>`
-  : '';
+const ldLoterica = ldParceiro(SITE.parceiro, SITE.url);
 
 salvar('/boloes', layout({
   titulo: 'Bolão da Mega-Sena, Lotofácil e Quina: como funciona | Pimba',
   descricao: 'Entenda como funciona o bolão oficial das loterias CAIXA: cotas, recibo, tarifa de serviço, onde comprar com segurança e como dividir o prêmio.',
   rota: '/boloes/',
+  extraHead: ldLoterica ? `<script type="application/ld+json">${JSON.stringify(ldLoterica)}</script>` : '',
   corpo: `
 <section class="secao">
   <div class="wrap estreito">
     ${migalhas([['Início', '/'], ['Bolões', '/boloes/']])}
     <h1>Bolões: jogue mais, pague uma cota</h1>
     <p class="lead">No bolão, várias pessoas dividem o custo de um jogo com mais números. Você paga uma cota e concorre com todas as combinações do bolão. Se ganhar, o prêmio é dividido entre as cotas.</p>
-    ${blocoParceiro}
+    ${blocoParceiro(SITE.parceiro)}
     <h2>Como funciona o Bolão CAIXA</h2>
     <ul class="lista-check">
       <li>O bolão é montado por uma <strong>lotérica credenciada</strong> e registrado no sistema da CAIXA.</li>
@@ -646,7 +633,7 @@ pagTexto('/sobre', 'Sobre o Pimba', 'O Pimba é um site independente com resulta
 <p>Somos um site <strong>independente</strong>. Não somos a CAIXA, não vendemos apostas e não temos vínculo com as Loterias CAIXA. Os resultados vêm das fontes oficiais e são exibidos minutos após cada sorteio.</p>
 <h2>Contato</h2>
 ${SITE.email ? `<p>E-mail: <a href="mailto:${esc(SITE.email)}">${esc(SITE.email)}</a></p>` : ''}
-${SITE.parceiro.ativo && SITE.parceiro.whatsapp ? `<p>WhatsApp: <a href="${zap(SITE.parceiro.whatsapp, 'Olá! Vim pelo site do Pimba.')}" target="_blank" rel="noopener">fale com a gente</a></p>` : ''}
+${parceiroAtivo(SITE.parceiro) && SITE.parceiro.whatsapp ? `<p>WhatsApp: <a href="${zap(SITE.parceiro.whatsapp, 'Olá! Vim pelo site do Pimba.')}" target="_blank" rel="noopener">fale com a gente</a></p>` : ''}
 <p>Encontrou um erro em algum resultado? Avise — corrigimos na hora.</p>`);
 
 pagTexto('/jogo-responsavel', 'Jogo responsável', 'Loteria é diversão. Veja como jogar com responsabilidade e onde buscar ajuda.', 'Jogo responsável', `
