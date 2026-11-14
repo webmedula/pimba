@@ -1,0 +1,17 @@
+{
+  // Pimba v1.0.0 — Cloudflare Workers (deploy automático a partir do GitHub)
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "pimba",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-11-01",
+  "build": { "command": "npm run build" },
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page",
+    "run_worker_first": ["/api/*", "/resultados/*"]
+  },
+  "observability": { "enabled": true }
+  // Para testar com dados falsos: CAIXA_API_BASE em .dev.vars (veja README)
+}
