@@ -9,6 +9,7 @@ Estatísticas e calendário de sorteios.
 - **Calendário** (`/calendario/` e `/calendario/<loteria>/`, 10 loterias): grade da semana com destaque para hoje, tabela com a data oficial do próximo concurso (vinda da CAIXA) e próximas datas calculadas no horário de Brasília. FAQ com dados estruturados
 - Links novos no menu, na home (ferramentas), no rodapé e nas páginas de resultado; todas as páginas novas entram no sitemap
 - **Correção:** dias e horários de sorteio atualizados para a grade vigente desde 19/07/2026 (sábado passou para domingo às 11h; dias úteis às 21h; Federal às 20h). Os dias agora são gerados a partir de um único campo `sorteios` em `assets/js/loterias.js`
+- `previews: {}` no wrangler.jsonc, exigido pelos builds de branch do Cloudflare (`wrangler preview`)
 - 7 testes novos (15 no total)
 
 ## v1.0.0 — 2026-11-13

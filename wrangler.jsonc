@@ -12,6 +12,8 @@
     "not_found_handling": "404-page",
     "run_worker_first": ["/api/*", "/resultados/*", "/estatisticas/*"]
   },
-  "observability": { "enabled": true }
+  "observability": { "enabled": true },
+  // Builds de branches/PRs no Cloudflare rodam `wrangler preview`, que exige este bloco (pode ficar vazio)
+  "previews": {}
   // Para testar com dados falsos: CAIXA_API_BASE em .dev.vars (veja README)
 }
