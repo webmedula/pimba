@@ -1,4 +1,4 @@
-# Pimba — pimba.com.br · v1.0.0
+# Pimba — pimba.com.br · v1.1.0
 
 Site de resultados das loterias da CAIXA, conferidor de apostas, gerador de números, chances reais e bolões (ponte para a lotérica parceira). Sem WordPress: site estático + Cloudflare Worker.
 
@@ -11,15 +11,18 @@ Site de resultados das loterias da CAIXA, conferidor de apostas, gerador de núm
 | `assets/js/loterias.js` | Dados das modalidades: preços, faixas, probabilidades, cores |
 | `assets/js/render.js` | Normaliza o JSON da CAIXA e monta o HTML (usado no Worker e no navegador) |
 | `assets/js/conferir.js` | Lógica do conferidor (testada) |
+| `assets/js/stats.js` | Cálculo e HTML das estatísticas (testado) |
+| `assets/js/datas.js` | Calendário: próximas datas no horário de Brasília (testado) |
 | `src/config.js` | **Configurações editáveis**: lotérica parceira, WhatsApp, AdSense, Analytics |
 
 ### Páginas
-`/` · `/resultados/` · `/resultados/<loteria>/` (11 loterias) · `/resultados/<loteria>/<concurso>/` · `/conferidor/` · `/gerador/` · `/boloes/` · `/probabilidades/` · `/sobre/` · `/jogo-responsavel/` · `/privacidade/` · `/termos/`
+`/` · `/resultados/` · `/resultados/<loteria>/` (11 loterias) · `/resultados/<loteria>/<concurso>/` · `/estatisticas/` · `/estatisticas/<loteria>/` (9) · `/calendario/` · `/calendario/<loteria>/` (10) · `/conferidor/` · `/gerador/` · `/boloes/` · `/probabilidades/` · `/sobre/` · `/jogo-responsavel/` · `/privacidade/` · `/termos/`
 
 ### API interna
 - `GET /api/resultado/<loteria>` — último concurso
 - `GET /api/resultado/<loteria>/<concurso>` — concurso específico
 - `GET /api/resultados` — último de todas
+- `GET /api/estatisticas/<loteria>?n=50` — estatísticas dos últimos 10, 25, 50 ou 100 concursos (`parcial: true` enquanto o histórico ainda está sendo montado no cache)
 
 ## Deploy no Cloudflare (igual ao webmedula-site)
 
@@ -52,4 +55,6 @@ npm run dev              # http://127.0.0.1:8787
 
 - A API usada é a mesma que alimenta o site oficial das Loterias CAIXA. Se um dia ela bloquear o Cloudflare, as páginas continuam no ar com aviso e link para o site oficial; aí trocamos a fonte em `CAIXA_API_BASE`.
 - Preços das apostas em `assets/js/loterias.js` (vigentes em out/2026). Atualize quando a CAIXA reajustar.
+- Dias e horários de sorteio ficam no campo `sorteios` de cada loteria em `assets/js/loterias.js` (`[dia da semana, hora]`, 0 = domingo). O texto das páginas e o calendário são gerados a partir dele.
+- O histórico das estatísticas fica no cache de cada data center do Cloudflare. O primeiro acesso numa região busca até 36 concursos; os seguintes, só o concurso novo.
 - O site **não vende apostas nem rifas**: só informa e direciona para os canais oficiais e para a lotérica parceira.

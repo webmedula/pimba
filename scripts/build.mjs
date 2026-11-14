@@ -3,8 +3,10 @@ import { mkdirSync, rmSync, writeFileSync, cpSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SITE } from '../src/config.js';
-import { LOTERIAS } from '../assets/js/loterias.js';
+import { LOTERIAS, POR_SLUG } from '../assets/js/loterias.js';
 import { esc, brl, fmtInt } from '../assets/js/render.js';
+import { JANELAS, JANELA_PADRAO, temEstatistica, seoEstatisticas } from '../assets/js/stats.js';
+import { DIAS, DIAS_CURTOS, SEMANA, sorteiosDoDia } from '../assets/js/datas.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = join(ROOT, 'dist');
@@ -36,6 +38,8 @@ const NAV = [
   ['/resultados/', 'Resultados'],
   ['/conferidor/', 'Conferidor'],
   ['/gerador/', 'Gerador'],
+  ['/estatisticas/', 'Estatísticas'],
+  ['/calendario/', 'Calendário'],
   ['/boloes/', 'Bolões'],
   ['/probabilidades/', 'Chances'],
 ];
@@ -109,6 +113,8 @@ ${ctaWhats()}
       <ul>
         <li><a href="/conferidor/">Conferidor de apostas</a></li>
         <li><a href="/gerador/">Gerador de números</a></li>
+        <li><a href="/estatisticas/">Estatísticas</a></li>
+        <li><a href="/calendario/">Calendário de sorteios</a></li>
         <li><a href="/probabilidades/">Chances de ganhar</a></li>
         <li><a href="/boloes/">Bolões</a></li>
       </ul>
@@ -144,8 +150,8 @@ const migalhas = (itens) => {
     .join('')}</ol></nav><script type="application/ld+json">${JSON.stringify(ld)}</script>`;
 };
 
-const chips = (atual = '') =>
-  `<div class="chips">${LOTERIAS.map((l) => `<a class="chip${l.slug === atual ? ' ativo' : ''}" style="--cor:${l.cor}" href="/resultados/${l.slug}/">${esc(l.nome)}</a>`).join('')}</div>`;
+const chips = (atual = '', secao = 'resultados', lista = LOTERIAS) =>
+  `<div class="chips">${lista.map((l) => `<a class="chip${l.slug === atual ? ' ativo' : ''}" style="--cor:${l.cor}" href="/${secao}/${l.slug}/">${esc(l.nome)}</a>`).join('')}</div>`;
 
 const tabelaOdds = (l) =>
   `<table class="tabela"><thead><tr><th>Faixa</th><th>Chance (aposta mínima)</th></tr></thead><tbody>${l.odds
@@ -154,7 +160,7 @@ const tabelaOdds = (l) =>
 
 // ---------- HOME ----------
 const faqHome = [
-  ['Que horas saem os resultados das loterias?', 'Os sorteios da CAIXA acontecem normalmente às 20h (horário de Brasília), no Espaço da Sorte, em São Paulo. O Pimba atualiza os resultados minutos depois da divulgação oficial.'],
+  ['Que horas saem os resultados das loterias?', 'De segunda a sexta, os sorteios da CAIXA acontecem às 21h (a Loteria Federal às 20h) e, aos domingos, às 11h, sempre no horário de Brasília. Desde julho de 2026 não há mais sorteios regulares aos sábados. O Pimba atualiza os resultados minutos depois da divulgação oficial. Veja o calendário completo em pimba.com.br/calendario/.'],
   ['O Pimba vende apostas?', 'Não. O Pimba é um site de informação: resultados, conferidor e ferramentas. Apostas e cotas de bolão oficiais são vendidas apenas nas lotéricas e nos canais da CAIXA (portal e aplicativo Loterias CAIXA).'],
   ['Qual a loteria mais fácil de ganhar?', 'Pela matemática, a chance de acertar o prêmio principal é maior no Dia de Sorte (1 em 2,6 milhões) e na Lotofácil (1 em 3,3 milhões). A Mega-Sena é 1 em 50 milhões. Veja a comparação completa na página de chances.'],
   ['Existe método para ganhar na loteria?', 'Não. Cada sorteio é independente e todas as combinações têm a mesma chance. Desconfie de quem vende "método garantido". O que muda a chance é apenas a quantidade de combinações que você joga.'],
@@ -206,6 +212,8 @@ ${anuncio('home-meio')}
     <div class="grid-ferr">
       <a class="ferr" href="/conferidor/"><span class="ferr-ico" aria-hidden="true">✓</span><h3>Conferidor</h3><p>Marque seus números e veja na hora quantos acertou e quanto pagou.</p></a>
       <a class="ferr" href="/gerador/"><span class="ferr-ico" aria-hidden="true">🎲</span><h3>Gerador de números</h3><p>Sem ideia de números? Gere jogos aleatórios para qualquer loteria.</p></a>
+      <a class="ferr" href="/estatisticas/"><span class="ferr-ico" aria-hidden="true">#</span><h3>Estatísticas</h3><p>Os números que mais e menos saíram nos últimos concursos.</p></a>
+      <a class="ferr" href="/calendario/"><span class="ferr-ico" aria-hidden="true">📅</span><h3>Calendário</h3><p>Que dia e que horas tem sorteio de cada loteria.</p></a>
       <a class="ferr" href="/probabilidades/"><span class="ferr-ico" aria-hidden="true">%</span><h3>Chances reais</h3><p>Qual loteria é mais fácil? A matemática de cada uma, sem promessa.</p></a>
       <a class="ferr" href="/boloes/"><span class="ferr-ico" aria-hidden="true">👥</span><h3>Bolões</h3><p>Jogue com mais combinações pagando só uma cota. Veja como funciona.</p></a>
     </div>
@@ -264,7 +272,7 @@ for (const l of LOTERIAS) {
         <p>${esc(l.regra)}</p>
         <ul class="fatos">
           ${l.preco ? `<li><strong>Aposta mínima:</strong> ${brl(l.preco)}</li>` : ''}
-          <li><strong>Sorteios:</strong> ${esc(l.dias)}</li>
+          <li><strong>Sorteios:</strong> ${l.sorteios ? `<a href="/calendario/${l.slug}/">${esc(l.dias)}</a> (horário de Brasília)` : esc(l.dias)}</li>
           <li><strong>Onde jogar:</strong> lotéricas e portal/aplicativo Loterias CAIXA</li>
         </ul>
         <h3>Chances de ganhar</h3>
@@ -275,6 +283,7 @@ for (const l of LOTERIAS) {
     <aside class="lateral">
       ${temConferidor ? `<a class="box-acao" style="--cor:${l.cor}" href="/conferidor/?l=${l.slug}"><strong>Conferir meu jogo</strong><span>Marque seus números e veja os acertos</span></a>
       <a class="box-acao box-acao-sec" href="/gerador/?l=${l.slug}"><strong>Gerar números</strong><span>Palpites aleatórios para a ${esc(l.nome)}</span></a>` : ''}
+      ${temEstatistica(l) ? `<a class="box-acao box-acao-sec" href="/estatisticas/${l.slug}/"><strong>Estatísticas</strong><span>Números que mais e menos saíram</span></a>` : ''}
       <a class="box-acao box-acao-sec" href="/boloes/"><strong>Jogar em bolão</strong><span>Mais combinações, custo dividido</span></a>
       <div class="box-outras"><h2>Outras loterias</h2>${chips(l.slug)}</div>
     </aside>
@@ -438,6 +447,193 @@ salvar('/probabilidades', layout({
 </section>`,
 }), { prioridade: '0.7' });
 
+// ---------- ESTATÍSTICAS ----------
+const comEstatistica = LOTERIAS.filter(temEstatistica);
+const avisoEstatistica = `<div class="aviso"><strong>Leia antes:</strong> estatística mostra o que já aconteceu, não o que vai acontecer. Cada sorteio é independente e todas as combinações têm exatamente a mesma chance. Número "quente", "frio" ou "atrasado" não aumenta sua probabilidade de ganhar. <a href="/probabilidades/">Veja as chances reais</a>.</div>`;
+
+const faqEstatisticas = [
+  ['Jogar nos números mais sorteados aumenta a chance de ganhar?', 'Não. As bolas não têm memória: em cada sorteio, todos os números têm a mesma chance de sair, não importa quantas vezes saíram antes. As diferenças de frequência nos últimos concursos são variação normal do acaso.'],
+  ['E os números atrasados, uma hora vão sair?', 'Vão, mas não porque estão "devendo". A chance de um número atrasado sair no próximo concurso é igual à de qualquer outro. A ideia de que ele está para sair é conhecida como falácia do apostador.'],
+  ['Então para que servem as estatísticas?', 'Para curiosidade e para escolher seus números de um jeito divertido, sabendo que nenhuma escolha é melhor que outra. A única forma de aumentar a chance é jogar mais combinações, por exemplo em bolões.'],
+];
+const ldFaqEst = `<script type="application/ld+json">${JSON.stringify({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faqEstatisticas.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) })}</script>`;
+const blocoFaqEst = `<section class="faq">${faqEstatisticas.map(([q, a]) => `<details><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`).join('')}</section>`;
+
+salvar('/estatisticas', layout({
+  titulo: 'Estatísticas das loterias: números mais e menos sorteados | Pimba',
+  descricao: 'Números que mais saíram, os que menos saíram e os atrasados da Mega-Sena, Lotofácil, Quina e outras loterias nos últimos concursos. Com aviso honesto: estatística não aumenta chance.',
+  rota: '/estatisticas/',
+  extraHead: ldFaqEst,
+  corpo: `
+<section class="secao">
+  <div class="wrap">
+    ${migalhas([['Início', '/'], ['Estatísticas', '/estatisticas/']])}
+    <h1>Estatísticas das loterias</h1>
+    <p class="lead">Quais números mais saíram, quais menos saíram e quais estão há mais tempo sem aparecer nos últimos 10, 25, 50 ou 100 concursos de cada loteria.</p>
+    ${avisoEstatistica}
+    <div class="grid-ferr">
+      ${comEstatistica.map((l) => `<a class="ferr ferr-lot" style="--cor:${l.cor}" href="/estatisticas/${l.slug}/"><h3>${esc(l.nome)}</h3><p>${l.tipo === 'colunas' ? 'Número mais sorteado em cada coluna' : `Frequência dos ${fmtInt(l.max - l.min + 1)} números${l.trevos ? ' e dos trevos' : l.extra === 'mes' ? ' e dos meses' : l.extra === 'time' ? ' e dos times' : ''}`}</p></a>`).join('')}
+    </div>
+    ${anuncio('estatisticas')}
+    <div class="estreito-col">
+      <h2>Perguntas frequentes</h2>
+      ${blocoFaqEst}
+    </div>
+  </div>
+</section>`,
+}), { prioridade: '0.8' });
+
+for (const l of comEstatistica) {
+  const rota = `/estatisticas/${l.slug}/`;
+  const meta = seoEstatisticas(l);
+  salvar(rota, layout({
+    titulo: meta.title,
+    descricao: meta.description,
+    rota,
+    scripts: ['estatisticas.js'],
+    corpo: `
+<section class="secao">
+  <div class="wrap layout-2">
+    <div>
+      ${migalhas([['Início', '/'], ['Estatísticas', '/estatisticas/'], [l.nome, rota]])}
+      <h1 style="--cor:${l.cor}" class="h1-lot">Estatísticas da ${esc(l.nome)}</h1>
+      ${avisoEstatistica}
+      <fieldset class="seletor-lot seletor-janela"><legend>Últimos concursos</legend>
+        ${JANELAS.map((n) => `<label class="opt-lot" style="--cor:${l.cor}"><input type="radio" name="janela" value="${n}"${n === JANELA_PADRAO ? ' checked' : ''}><span>${n}</span></label>`).join('')}
+      </fieldset>
+      <div id="estatisticas" class="resultado" data-slug="${l.slug}" aria-live="polite">
+        <div class="carregando"><span></span><span></span><span></span> Calculando as estatísticas…</div>
+      </div>
+      ${anuncio('estatisticas')}
+      <section class="como-jogar">
+        <h2>Como ler estas estatísticas</h2>
+        <ul class="lista-check">
+          ${l.tipo === 'colunas'
+            ? '<li><strong>Por coluna:</strong> no Super Sete cada coluna tem seu próprio sorteio de 0 a 9, então a contagem é feita coluna a coluna.</li>'
+            : `<li><strong>Mais e menos sorteados:</strong> quantas vezes cada número saiu no período escolhido${l.duplo ? ', somando os dois sorteios de cada concurso' : ''}.</li>
+          <li><strong>Há mais tempo sem sair:</strong> quantos concursos se passaram desde a última vez que o número apareceu.</li>`}
+          <li><strong>Média esperada:</strong> quantas vezes cada número sairia se tudo fosse perfeitamente igual. Na prática sempre há diferenças, e elas são normais.</li>
+        </ul>
+        <h2>Perguntas frequentes</h2>
+        ${blocoFaqEst}
+        <p class="muted small">Calculado a partir dos resultados oficiais das Loterias CAIXA. Confira sempre o resultado oficial.</p>
+      </section>
+    </div>
+    <aside class="lateral">
+      <a class="box-acao" style="--cor:${l.cor}" href="/resultados/${l.slug}/"><strong>Último resultado</strong><span>Números, ganhadores e prêmios</span></a>
+      <a class="box-acao box-acao-sec" href="/gerador/?l=${l.slug}"><strong>Gerar números</strong><span>Palpites aleatórios para a ${esc(l.nome)}</span></a>
+      <a class="box-acao box-acao-sec" href="/calendario/${l.slug}/"><strong>Quando é o sorteio</strong><span>${esc(l.dias)}</span></a>
+      <div class="box-outras"><h2>Outras estatísticas</h2>${chips(l.slug, 'estatisticas', comEstatistica)}</div>
+    </aside>
+  </div>
+</section>`,
+  }), { prioridade: '0.7' });
+}
+
+// ---------- CALENDÁRIO ----------
+const comCalendario = LOTERIAS.filter((l) => l.sorteios);
+const notaCalendario = `<p class="muted small">Horários de Brasília. Desde 19 de julho de 2026 os concursos que eram aos sábados passaram para domingo, às 11h. Em feriados, eleições e concursos especiais (como a Mega da Virada, em 31 de dezembro) a CAIXA pode mudar datas: a data que vale é a divulgada nos canais oficiais.</p>`;
+
+const faqCalendario = [
+  ['Que horas são os sorteios das loterias?', 'De segunda a sexta, às 21h (a Loteria Federal às 20h). Aos domingos, às 11h. Sempre no horário de Brasília.'],
+  ['Tem sorteio de loteria no sábado?', 'Não há sorteios regulares aos sábados desde 19 de julho de 2026, quando a CAIXA passou os concursos de sábado para domingo de manhã. Em casos excepcionais, como eleições, a CAIXA pode antecipar sorteios para o sábado.'],
+  ['Que dia tem sorteio da Mega-Sena?', `A Mega-Sena é sorteada ${POR_SLUG['mega-sena'].dias}.`],
+  ['Que dia tem sorteio da Lotofácil?', `A Lotofácil é sorteada ${POR_SLUG.lotofacil.dias}.`],
+  ['Até que horas posso apostar?', 'As apostas costumam fechar pouco antes do sorteio, mas o horário exato varia por canal e por concurso. Confira na lotérica ou no aplicativo Loterias CAIXA.'],
+];
+
+salvar('/calendario', layout({
+  titulo: 'Calendário de sorteios das loterias da CAIXA: dias e horários | Pimba',
+  descricao: 'Que dia tem sorteio da Mega-Sena, Lotofácil, Quina e das outras loterias da CAIXA? Veja os dias e horários de cada uma, o que tem hoje e a data do próximo concurso.',
+  rota: '/calendario/',
+  scripts: ['calendario.js'],
+  extraHead: `<script type="application/ld+json">${JSON.stringify({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faqCalendario.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) })}</script>`,
+  corpo: `
+<section class="secao">
+  <div class="wrap">
+    ${migalhas([['Início', '/'], ['Calendário de sorteios', '/calendario/']])}
+    <div class="cal-topo">
+      <div>
+        <h1>Calendário de sorteios</h1>
+        <p class="lead">Os dias e horários de cada loteria da CAIXA. De segunda a sexta os sorteios são à noite; aos domingos, de manhã.</p>
+      </div>
+      <aside class="cal-hoje" id="cal-hoje" aria-live="polite"><p class="hd-label">Hoje</p><p class="hd-info">Carregando…</p></aside>
+    </div>
+    <div class="cal-semana" role="list">
+      ${SEMANA.map((d) => {
+        const lista = sorteiosDoDia(d);
+        return `<section class="cal-dia" data-dia="${d}" role="listitem"><h2><span class="cal-dia-longo">${DIAS[d]}</span><span class="cal-dia-curto" aria-hidden="true">${DIAS_CURTOS[d]}</span></h2>${lista.length
+          ? `<ul>${lista.map(({ lot, hora }) => `<li style="--cor:${lot.cor}"><a href="/calendario/${lot.slug}/">${esc(lot.nome)}</a><span>${hora}h</span></li>`).join('')}</ul>`
+          : '<p class="muted small">Sem sorteios regulares</p>'}</section>`;
+      }).join('')}
+    </div>
+    ${notaCalendario}
+    ${anuncio('calendario')}
+    <h2>Dias, horários e próximo concurso</h2>
+    <div class="tabela-rolagem">
+    <table class="tabela"><thead><tr><th>Loteria</th><th>Dias e horários</th><th>Próximo concurso</th></tr></thead><tbody>
+      ${LOTERIAS.map((l) => `<tr><td><a href="/calendario/${l.slug}/" class="ponto" style="--cor:${l.cor}">${esc(l.nome)}</a></td><td>${esc(l.dias)}</td><td data-proximo="${l.slug}" class="muted">—</td></tr>`).join('')}
+    </tbody></table>
+    </div>
+    <p class="muted small">A Loteca não tem dia fixo: o concurso segue a rodada de futebol da semana.</p>
+    <div class="estreito-col">
+      <h2>Perguntas frequentes</h2>
+      <section class="faq">${faqCalendario.map(([q, a]) => `<details><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`).join('')}</section>
+    </div>
+  </div>
+</section>`,
+}), { prioridade: '0.8' });
+
+for (const l of comCalendario) {
+  const rota = `/calendario/${l.slug}/`;
+  const resposta = `A ${l.nome} é sorteada ${l.dias}, no horário de Brasília.`;
+  salvar(rota, layout({
+    titulo: `Que dia tem sorteio da ${l.nome}? Dias e horários | Pimba`,
+    descricao: `${resposta} Veja as próximas datas, a data oficial do próximo concurso e a estimativa de prêmio.`,
+    rota,
+    scripts: ['calendario.js'],
+    extraHead: `<script type="application/ld+json">${JSON.stringify({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: [{ '@type': 'Question', name: `Que dia tem sorteio da ${l.nome}?`, acceptedAnswer: { '@type': 'Answer', text: resposta } }] })}</script>`,
+    corpo: `
+<section class="secao">
+  <div class="wrap layout-2">
+    <div>
+      ${migalhas([['Início', '/'], ['Calendário', '/calendario/'], [l.nome, rota]])}
+      <h1 style="--cor:${l.cor}" class="h1-lot">Quando é o sorteio da ${esc(l.nome)}?</h1>
+      <p class="lead">${esc(resposta)}</p>
+      <div class="resultado cal-lot" style="--cor:${l.cor}">
+        <h2 class="h-sorteio">Dias de sorteio</h2>
+        <ul class="cal-mini">${SEMANA.map((d) => {
+          const s = l.sorteios.find(([dia]) => dia === d);
+          return `<li data-dia="${d}"${s ? ' class="tem"' : ''}><span>${DIAS_CURTOS[d]}</span><b>${s ? `${s[1]}h` : '—'}</b></li>`;
+        }).join('')}</ul>
+        <h2 class="h-sorteio">Próximo concurso (data oficial)</h2>
+        <p data-proximo="${l.slug}" class="muted">Consultando a CAIXA…</p>
+        <h2 class="h-sorteio">Próximas datas pela grade</h2>
+        <ol class="cal-proximos" id="cal-proximos" data-slug="${l.slug}"><li class="muted">${esc(l.dias)}</li></ol>
+      </div>
+      ${notaCalendario}
+      ${anuncio('calendario')}
+      <section class="como-jogar">
+        <h2>Como jogar na ${esc(l.nome)}</h2>
+        <p>${esc(l.regra)}</p>
+        <ul class="fatos">
+          ${l.preco ? `<li><strong>Aposta mínima:</strong> ${brl(l.preco)}</li>` : ''}
+          <li><strong>Onde jogar:</strong> lotéricas e portal/aplicativo Loterias CAIXA</li>
+          <li><strong>Onde ver o sorteio:</strong> ao vivo nos canais oficiais da CAIXA; o resultado aparece no Pimba minutos depois</li>
+        </ul>
+      </section>
+    </div>
+    <aside class="lateral">
+      <a class="box-acao" style="--cor:${l.cor}" href="/resultados/${l.slug}/"><strong>Último resultado</strong><span>Números, ganhadores e prêmios</span></a>
+      ${temEstatistica(l) ? `<a class="box-acao box-acao-sec" href="/estatisticas/${l.slug}/"><strong>Estatísticas</strong><span>Números que mais e menos saíram</span></a>` : ''}
+      ${temEstatistica(l) ? `<a class="box-acao box-acao-sec" href="/conferidor/?l=${l.slug}"><strong>Conferir meu jogo</strong><span>Marque seus números e veja os acertos</span></a>` : ''}
+      <div class="box-outras"><h2>Outras loterias</h2>${chips(l.slug, 'calendario', comCalendario)}</div>
+    </aside>
+  </div>
+</section>`,
+  }), { prioridade: '0.7' });
+}
+
 // ---------- PÁGINAS INSTITUCIONAIS ----------
 const pagTexto = (rota, titulo, descricao, h1, html) =>
   salvar(rota, layout({
@@ -532,6 +728,8 @@ writeFileSync(join(DIST, '_redirects'), `/shop / 301
 /wp-admin / 301
 /wp-admin/* / 301
 /resultados /resultados/ 301
+/estatisticas /estatisticas/ 301
+/calendario /calendario/ 301
 /conferidor /conferidor/ 301
 /gerador /gerador/ 301
 `);

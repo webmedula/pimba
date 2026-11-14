@@ -1,23 +1,27 @@
-// Pimba v1.0.0 — Cloudflare Worker
+// Pimba v1.1.0 — Cloudflare Worker
 // - Serve os arquivos estáticos de dist/ (binding ASSETS)
 // - /api/resultado/:slug[/:concurso] e /api/resultados → proxy da API da Caixa, normalizado e com cache
+// - /api/estatisticas/:slug?n=50 → números mais/menos sorteados nos últimos N concursos (histórico em cache)
 // - /resultados/:slug/ e /resultados/:slug/:concurso/ → página renderizada no servidor (bom para SEO)
+// - /estatisticas/:slug/ → página de estatísticas renderizada no servidor
 
 import { LOTERIAS, POR_SLUG } from '../assets/js/loterias.js';
 import { normalizar, renderResultado, seo } from '../assets/js/render.js';
+import { JANELA_MAX, JANELA_PADRAO, compactar, calcularEstatisticas, janelaValida, renderEstatisticas, temEstatistica } from '../assets/js/stats.js';
 
 const CAIXA_BASE = 'https://servicebus2.caixa.gov.br/portaldeloterias/api';
 const TTL_ULTIMO = 300; // 5 min para o último concurso
 const TTL_ANTIGO = 60 * 60 * 24 * 30; // 30 dias para concursos já apurados
 
-async function buscarCaixa(lot, concurso, env, ctx) {
+// Busca direto na Caixa, sem passar pelo cache (usado para montar o histórico das estatísticas).
+async function buscarCaixaDireto(lot, concurso, env) {
+  const raw = await baixarCaixa(lot, concurso, env);
+  return normalizar(raw, lot);
+}
+
+async function baixarCaixa(lot, concurso, env) {
   const base = env.CAIXA_API_BASE || CAIXA_BASE;
   const url = `${base}/${lot.api}${concurso ? `/${concurso}` : ''}`;
-  const cache = caches.default;
-  const chave = new Request(`https://cache.pimba/${lot.api}/${concurso || 'ultimo'}`);
-  const emCache = await cache.match(chave);
-  if (emCache) return emCache.json();
-
   const resp = await fetch(url, {
     headers: {
       Accept: 'application/json',
@@ -33,12 +37,62 @@ async function buscarCaixa(lot, concurso, env, ctx) {
   } catch {
     throw new Error('Caixa não devolveu JSON');
   }
+  return raw;
+}
+
+async function buscarCaixa(lot, concurso, env, ctx) {
+  const cache = caches.default;
+  const chave = new Request(`https://cache.pimba/${lot.api}/${concurso || 'ultimo'}`);
+  const emCache = await cache.match(chave);
+  if (emCache) return emCache.json();
+
+  const raw = await baixarCaixa(lot, concurso, env);
   const dados = normalizar(raw, lot);
   const ttl = concurso && !raw.ultimoConcurso ? TTL_ANTIGO : TTL_ULTIMO;
   ctx.waitUntil(
     cache.put(chave, new Response(JSON.stringify(dados), { headers: { 'Cache-Control': `public, max-age=${ttl}` } })),
   );
   return dados;
+}
+
+// ---------- estatísticas ----------
+// O plano grátis do Workers permite 50 subrequests (fetch + Cache API) por requisição. Por isso o histórico dos
+// últimos JANELA_MAX concursos fica numa única entrada de cache por loteria e é completado aos poucos:
+// no máximo MAX_BUSCAS concursos novos por requisição (normalmente só 1, o concurso que acabou de sair).
+const MAX_BUSCAS = 36;
+const TTL_HIST = 60 * 60 * 24 * 30;
+
+async function historico(lot, env, ctx) {
+  const ultimo = await buscarCaixa(lot, null, env, ctx);
+  const cache = caches.default;
+  const chave = new Request(`https://cache.pimba/hist/${lot.api}`);
+  const emCache = await cache.match(chave);
+  const salvo = emCache ? await emCache.json().catch(() => []) : [];
+  const porConcurso = new Map(salvo.map((h) => [h.c, h]));
+  porConcurso.set(ultimo.concurso, compactar(ultimo));
+
+  const menor = Math.max(1, ultimo.concurso - JANELA_MAX + 1);
+  const faltam = [];
+  for (let c = ultimo.concurso; c >= menor; c--) if (!porConcurso.has(c)) faltam.push(c);
+  const lote = faltam.slice(0, MAX_BUSCAS);
+  for (let i = 0; i < lote.length; i += 6) {
+    const grupo = await Promise.all(lote.slice(i, i + 6).map((c) => buscarCaixaDireto(lot, c, env).catch(() => null)));
+    for (const r of grupo) if (r) porConcurso.set(r.concurso, compactar(r));
+  }
+
+  const hist = [...porConcurso.values()].filter((h) => h.c >= menor).sort((a, b) => b.c - a.c);
+  const mudou = !emCache || hist.length !== salvo.length || hist[0]?.c !== salvo[0]?.c;
+  if (mudou) {
+    ctx.waitUntil(cache.put(chave, new Response(JSON.stringify(hist), { headers: { 'Cache-Control': `public, max-age=${TTL_HIST}` } })));
+  }
+  return { hist, ultimo: ultimo.concurso };
+}
+
+async function estatisticas(lot, janela, env, ctx) {
+  const { hist, ultimo } = await historico(lot, env, ctx);
+  const est = calcularEstatisticas(hist, lot, janela);
+  est.parcial = est.concursos < Math.min(janela, ultimo);
+  return est;
 }
 
 const json = (obj, status = 200, maxAge = 120) =>
@@ -71,7 +125,45 @@ async function api(url, env, ctx) {
       return json({ erro: 'Não foi possível consultar a Caixa agora.', detalhe: String(e.message || e) }, 502);
     }
   }
+  if (partes[1] === 'estatisticas') {
+    const lot = POR_SLUG[partes[2]];
+    if (!lot || !temEstatistica(lot)) return json({ erro: 'Loteria sem estatísticas' }, 404);
+    try {
+      const est = await estatisticas(lot, janelaValida(url.searchParams.get('n')), env, ctx);
+      return json(est, 200, est.parcial ? 10 : 300);
+    } catch (e) {
+      return json({ erro: 'Não foi possível consultar a Caixa agora.', detalhe: String(e.message || e) }, 502);
+    }
+  }
   return json({ erro: 'Rota não encontrada' }, 404);
+}
+
+async function paginaEstatisticas(req, url, env, ctx) {
+  const m = url.pathname.match(/^\/estatisticas\/([a-z-]+)\/?$/);
+  const lot = m && POR_SLUG[m[1]];
+  if (!lot || !temEstatistica(lot)) return env.ASSETS.fetch(req);
+  if (!url.pathname.endsWith('/')) return Response.redirect(`${url.origin}${url.pathname}/`, 301);
+  const template = await env.ASSETS.fetch(new Request(new URL(`/estatisticas/${lot.slug}/`, url.origin)));
+  if (!template.ok) return template;
+
+  let est;
+  try {
+    est = await estatisticas(lot, JANELA_PADRAO, env, ctx);
+  } catch {
+    return template; // o navegador tenta buscar sozinho
+  }
+  if (est.parcial) return template;
+  const resp = new HTMLRewriter()
+    .on('#estatisticas', {
+      element: (el) => {
+        el.setAttribute('data-ssr', '1');
+        el.setInnerContent(renderEstatisticas(est, lot), { html: true });
+      },
+    })
+    .transform(template);
+  const headers = new Headers(resp.headers);
+  headers.set('Cache-Control', 'public, max-age=300');
+  return new Response(resp.body, { status: 200, headers });
 }
 
 async function paginaResultado(req, url, env, ctx) {
@@ -134,6 +226,7 @@ export default {
 
     if (url.pathname.startsWith('/api/')) return api(url, env, ctx);
     if (url.pathname.startsWith('/resultados/')) return paginaResultado(req, url, env, ctx);
+    if (url.pathname.startsWith('/estatisticas/')) return paginaEstatisticas(req, url, env, ctx);
     return env.ASSETS.fetch(req);
   },
 };
