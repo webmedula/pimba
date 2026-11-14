@@ -3,23 +3,34 @@
 export const SITE = {
   nome: 'Pimba',
   url: 'https://pimba.com.br',
-  versao: '1.1.0',
+  versao: '1.2.0',
   slogan: 'Resultados das loterias, conferidor e bolões — sem enrolação.',
   email: '', // ex.: contato@pimba.com.br (deixe vazio para esconder)
 
   // Lista de avisos no WhatsApp (link de grupo/comunidade ou wa.me). Vazio = botões escondidos.
   whatsappLista: '',
 
-  // Lotérica parceira. Enquanto `ativo` for false, a página de bolões mostra só o conteúdo geral.
+  // Lotérica parceira. Enquanto `ativo` for false, a home e a página de bolões mostram só o conteúdo geral.
+  // Regra: o site NÃO vende cotas. Os botões levam ao canal oficial (portal/app Loterias CAIXA) ou ao WhatsApp da lotérica.
   parceiro: {
-    ativo: false,
-    nome: '', // ex.: Lotérica Sorte Grande
-    cidade: '', // ex.: Goiânia/GO
-    endereco: '',
-    horario: '', // ex.: seg a sex 8h–18h, sáb 8h–13h
-    whatsapp: '', // só números com DDI, ex.: 5562999999999
-    // Link da página de bolões da lotérica no Loterias CAIXA (canal oficial de venda online de cotas)
+    ativo: true,
+    nome: 'Sorte Milionária Loterias', // nome de exibição (confirmar com o parceiro)
+    razaoSocial: 'SORTE MILIONARIA LOTERIAS LTDA',
+    cnpj: '03.790.473/0001-28',
+    cidade: 'Goiânia/GO',
+    // Endereço do cadastro do CNPJ (Receita Federal, atualizado em 10/2026)
+    endereco: 'Flamboyant Shopping, Av. Dep. Jamel Cecílio, 3300, piso 2, loja DS-04, Jardim Goiás',
+    municipio: 'Goiânia',
+    uf: 'GO',
+    cep: '74810-100',
+    horario: '', // ex.: seg a sáb 10h–22h, dom 14h–20h  (falta confirmar)
+    whatsapp: '', // só números com DDI, ex.: 5562999999999  (falta)
+    email: 'sortemilionaria@uol.com.br',
+    // Link direto dos bolões da lotérica no Loterias CAIXA. Vazio = botão abre o portal oficial
+    // com a instrução "entre em Bolões e escolha a lotérica". Só aceita endereços *.caixa.gov.br.
     linkBoloesCaixa: '',
+    grupoWhatsapp: '', // link do grupo/comunidade de avisos de bolões da lotérica (falta)
+    agenciaVinculacao: '1575', // uso interno, não aparece no site
   },
 
   // Monetização / métricas (vazio = desligado)
