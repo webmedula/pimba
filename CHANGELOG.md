@@ -1,5 +1,17 @@
 # Changelog — Pimba
 
+## v1.4.0 — 2026-11-15
+App Android: o site virou PWA instalável e está pronto para ser empacotado (TWA) e publicado na Google Play.
+- **Manifesto do app** (`/manifest.webmanifest`): nome, cores, ícones 192/512 (normal e *maskable*) e atalhos para Resultados, Conferidor, Gerador e Calendário
+- **Service worker** (`/sw.js`): conferidor, gerador, calendário e páginas institucionais abrem sem internet. **Resultados, estatísticas e a API nunca saem do cache**: sem conexão aparece a página "Você está sem internet" (`/offline/`), para ninguém ver número velho como se fosse o último
+- **Botão "Instalar o app"** no rodapé, quando o Chrome permite instalar; vira "Baixe o app na Play Store" quando `app.playStoreUrl` for preenchido
+- **Modo app Android:** o app abre em `/?origem=android`; nele somem o botão "Comprar cota no Loterias CAIXA" e o WhatsApp de bolões da lotérica, e aparece um aviso sem link. Motivo: a política de jogos de azar da Google Play não aceita app sem licença de apostas levando à compra de cotas. No site nada muda
+- **`/.well-known/assetlinks.json`** servido pelo Worker a partir de `app.sha256` em `src/config.js` (404 enquanto vazio; o build recusa impressão digital no formato errado)
+- **`android/twa-manifest.json`** para o Bubblewrap (pacote `br.com.pimba.app`) e `.gitignore` que impede subir a chave de assinatura
+- **Ícone da Play (512x512) e imagem de destaque (1024x500)** em `assets/img/app/`, gerados por `scripts/gerar-icones.mjs`
+- **Guia `docs/ANDROID.md`**: conta de desenvolvedor, gerar o AAB (PWABuilder ou Bubblewrap), formulários da Play Console, ligar o app ao site e textos prontos para a ficha da loja
+- Código do app em `scripts/app.mjs`; 7 testes novos (33 no total)
+
 ## v1.3.0 — 2026-11-15
 Google AdSense ligado (editor `ca-pub-6982528073256938`).
 - **Script do AdSense no `<head>` de todas as páginas** (42), igual ao código do painel

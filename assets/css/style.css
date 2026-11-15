@@ -305,3 +305,11 @@ h3 { font-size: 1.15rem; margin: 1.2em 0 .5em; }
 .cal-proximos li.hoje { font-weight: 700; }
 .cal-lot .h-sorteio { font-size: 1rem; margin: 18px 0 0; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
 .cal-lot .h-sorteio:first-child { margin-top: 0; }
+
+/* v1.4.0 — app (PWA / Android) */
+.so-no-app { display: none; }
+.modo-app .so-no-app { display: block; }
+.modo-app [data-fora-do-app] { display: none !important; }
+.instalar-app { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+.instalar-app:empty { display: none; }
+@media (display-mode: standalone) { .instalar-app { display: none; } }

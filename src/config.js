@@ -3,7 +3,7 @@
 export const SITE = {
   nome: 'Pimba',
   url: 'https://pimba.com.br',
-  versao: '1.3.0',
+  versao: '1.4.0',
   slogan: 'Resultados das loterias, conferidor e bolões — sem enrolação.',
   email: '', // ex.: contato@pimba.com.br (deixe vazio para esconder)
 
@@ -44,4 +44,19 @@ export const SITE = {
     estatisticas: '', // no meio das páginas de estatísticas
   },
   googleAnalyticsId: '', // ex.: G-XXXXXXXXXX
+
+  // App Android (PWA empacotado como TWA para a Play Store). Passo a passo em docs/ANDROID.md.
+  app: {
+    nome: 'Pimba — Resultados das Loterias',
+    nomeCurto: 'Pimba',
+    pacoteAndroid: 'br.com.pimba.app', // identificador do app na Play Store (não muda depois de publicado)
+    // Impressões digitais SHA-256 das chaves de assinatura do app (Play Console > Testar e lançar >
+    // Integridade do app > Assinatura de apps). Cole as duas: "chave de assinatura do app" e "chave de upload".
+    // Formato: 'AB:CD:EF:...' (32 pares). Vazio = /.well-known/assetlinks.json responde 404 e o app
+    // abre com a barra de endereço do Chrome no topo até isso ser preenchido.
+    sha256: [
+      // 'COLE:AQUI:A:IMPRESSAO:DIGITAL:SHA-256:DA:PLAY:CONSOLE',
+    ],
+    playStoreUrl: '', // link da ficha na Play Store, quando publicado (mostra o botão "Baixe na Play Store")
+  },
 };

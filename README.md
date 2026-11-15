@@ -1,4 +1,4 @@
-# Pimba — pimba.com.br · v1.3.0
+# Pimba — pimba.com.br · v1.4.0
 
 Site de resultados das loterias da CAIXA, conferidor de apostas, gerador de números, chances reais e bolões (ponte para a lotérica parceira). Sem WordPress: site estático + Cloudflare Worker.
 
@@ -13,7 +13,9 @@ Site de resultados das loterias da CAIXA, conferidor de apostas, gerador de núm
 | `assets/js/conferir.js` | Lógica do conferidor (testada) |
 | `assets/js/stats.js` | Cálculo e HTML das estatísticas (testado) |
 | `assets/js/datas.js` | Calendário: próximas datas no horário de Brasília (testado) |
-| `src/config.js` | **Configurações editáveis**: lotérica parceira, WhatsApp, AdSense, Analytics |
+| `scripts/app.mjs` | App: manifesto do PWA, service worker, assetlinks e "modo app" Android |
+| `android/twa-manifest.json` | Configuração do pacote Android (TWA/Bubblewrap). Guia em `docs/ANDROID.md` |
+| `src/config.js` | **Configurações editáveis**: lotérica parceira, WhatsApp, AdSense, Analytics, app Android |
 
 ### Páginas
 `/` · `/resultados/` · `/resultados/<loteria>/` (11 loterias) · `/resultados/<loteria>/<concurso>/` · `/estatisticas/` · `/estatisticas/<loteria>/` (9) · `/calendario/` · `/calendario/<loteria>/` (10) · `/conferidor/` · `/gerador/` · `/boloes/` · `/probabilidades/` · `/sobre/` · `/jogo-responsavel/` · `/privacidade/` · `/termos/`
@@ -41,6 +43,7 @@ Edite `src/config.js`:
 - `whatsappLista`: link do grupo/comunidade de avisos.
 - `adsenseClient`: código de editor do AdSense (o script no `<head>` e o `ads.txt` são gerados sozinhos). `adsenseSlots`: IDs dos blocos de anúncio; sem ID, os espaços ficam escondidos. Os anúncios nunca aparecem na página de bolões nem colados no bloco da lotérica.
 - `googleAnalyticsId`: quando tiver a conta.
+- `app`: app Android. Depois de enviar o app à Play, cole as impressões digitais SHA-256 em `app.sha256` (liga o app ao site) e o link da ficha em `app.playStoreUrl`. Passo a passo completo em [`docs/ANDROID.md`](docs/ANDROID.md).
 
 ## Testar localmente
 
