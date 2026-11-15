@@ -1,5 +1,14 @@
 # Changelog — Pimba
 
+## v1.4.1 — 2026-11-15
+Correção: no celular a página "escapava" para o lado (rolagem horizontal). Ajuste pontual, sem mudar o visual.
+- **Causa principal:** abaixo de 920px a grade `.layout-2` (resultados e estatísticas) virava `1fr`, que deixa a coluna crescer até o item mais largo. Agora é `minmax(0, 1fr)`, e a coluna respeita a largura da tela
+- **Tabelas de premiação, Loteca e Federal** (resultado e conferidor) agora ficam dentro de `.tabela-rolagem`: quando não cabem, rolam dentro do próprio quadro em vez de empurrar a página
+- **Tabelas mais compactas em telas até 480px** (menos espaçamento nas células), e a premiação passa a caber sem rolar
+- **Links longos na Política de Privacidade** quebram linha (`overflow-wrap: anywhere`)
+- Conferido nas 42 páginas a 320px e 360px de largura: nenhuma passa da tela. 2 testes novos (35 no total)
+- Versão nova também troca o `?v=` do CSS/JS e o cache do service worker, então quem já instalou o app recebe a correção
+
 ## v1.4.0 — 2026-11-15
 App Android: o site virou PWA instalável e está pronto para ser empacotado (TWA) e publicado na Google Play.
 - **Manifesto do app** (`/manifest.webmanifest`): nome, cores, ícones 192/512 (normal e *maskable*) e atalhos para Resultados, Conferidor, Gerador e Calendário
