@@ -1,0 +1,16 @@
+# Nunca suba a chave de assinatura nem o projeto gerado pelo Bubblewrap
+*.keystore
+*.jks
+*.aab
+*.apk
+app/
+gradle/
+gradlew
+gradlew.bat
+build.gradle
+settings.gradle
+gradle.properties
+local.properties
+.gradle/
+store_icon.png
+manifest-checksum.txt

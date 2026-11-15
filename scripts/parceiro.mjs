@@ -1,4 +1,4 @@
-// Pimba v1.2.0 — bloco da lotérica parceira (usado na home e em /boloes/).
+// Pimba v1.2.0 (modo app na v1.4.0) — bloco da lotérica parceira (usado na home e em /boloes/).
 // Regra: o Pimba NÃO vende cotas. Só divulga e manda o cliente para o canal oficial
 // (portal/app Loterias CAIXA ou o balcão da lotérica), onde ele recebe o recibo oficial.
 import { esc } from '../assets/js/render.js';
@@ -17,6 +17,11 @@ const soCaixa = (url) => /^https:\/\/([a-z0-9-]+\.)*caixa\.gov\.br\//i.test(url)
 
 export const linkMapa = (p) =>
   p.endereco ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${p.nome}, ${p.endereco}, ${p.cidade || ''}`)}` : '';
+
+// No app Android (Play Store) o bloco inteiro some (data-fora-do-app) e fica só este aviso, sem link de compra.
+// Motivo: a política de jogos de azar da Play não deixa app sem licença de apostas levar à compra de cotas.
+export const avisoNoApp = (p) =>
+  `<p class="aviso so-no-app">Cotas de bolão oficiais são vendidas só nas lotéricas credenciadas e nos canais da CAIXA (portal e app Loterias CAIXA), sempre com recibo oficial. O app do Pimba é apenas informativo e não vende cotas.${p && p.nome ? ` Nossa lotérica parceira é a ${esc(p.nome)}${p.cidade ? `, em ${esc(p.cidade)}` : ''}.` : ''}</p>`;
 
 // variante: 'boloes' (completo, com passo a passo) ou 'home' (resumido)
 export function blocoParceiro(p, { variante = 'boloes' } = {}) {
@@ -49,7 +54,8 @@ export function blocoParceiro(p, { variante = 'boloes' } = {}) {
   if (variante === 'home') {
     return `<section class="secao">
   <div class="wrap">
-    <div class="parceiro parceiro-home">
+    ${avisoNoApp(p)}
+    <div class="parceiro parceiro-home" data-fora-do-app>
       <p class="selo">Lotérica parceira do Pimba</p>
       <h2>Bolões da ${esc(p.nome)}</h2>
       <p>Jogue com mais números pagando só uma cota. Compre pelo canal oficial da CAIXA e receba o recibo da sua cota no celular.</p>
@@ -63,7 +69,7 @@ export function blocoParceiro(p, { variante = 'boloes' } = {}) {
 </section>`;
   }
 
-  return `<section class="parceiro" id="loterica">
+  return `${avisoNoApp(p)}<section class="parceiro" id="loterica" data-fora-do-app>
   <p class="selo">Lotérica parceira do Pimba</p>
   <h2>${esc(p.nome)}</h2>
   ${fatos}

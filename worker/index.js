@@ -1,4 +1,5 @@
-// Pimba v1.1.0 — Cloudflare Worker
+// Pimba v1.4.0 — Cloudflare Worker
+// - /.well-known/assetlinks.json → liga o app Android (TWA) ao site, a partir de SITE.app.sha256
 // - Serve os arquivos estáticos de dist/ (binding ASSETS)
 // - /api/resultado/:slug[/:concurso] e /api/resultados → proxy da API da Caixa, normalizado e com cache
 // - /api/estatisticas/:slug?n=50 → números mais/menos sorteados nos últimos N concursos (histórico em cache)
@@ -7,6 +8,8 @@
 
 import { LOTERIAS, POR_SLUG } from '../assets/js/loterias.js';
 import { normalizar, renderResultado, seo } from '../assets/js/render.js';
+import { SITE } from '../src/config.js';
+import { assetLinks } from '../scripts/app.mjs';
 import { JANELA_MAX, JANELA_PADRAO, compactar, calcularEstatisticas, janelaValida, renderEstatisticas, temEstatistica } from '../assets/js/stats.js';
 
 const CAIXA_BASE = 'https://servicebus2.caixa.gov.br/portaldeloterias/api';
@@ -224,6 +227,10 @@ export default {
       return Response.redirect(url.toString(), 301);
     }
 
+    if (url.pathname === '/.well-known/assetlinks.json') {
+      const links = assetLinks(SITE.app);
+      return links ? json(links, 200, 3600) : json({ erro: 'App Android ainda sem impressão digital (SITE.app.sha256)' }, 404);
+    }
     if (url.pathname.startsWith('/api/')) return api(url, env, ctx);
     if (url.pathname.startsWith('/resultados/')) return paginaResultado(req, url, env, ctx);
     if (url.pathname.startsWith('/estatisticas/')) return paginaEstatisticas(req, url, env, ctx);

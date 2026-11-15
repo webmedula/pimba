@@ -9,6 +9,7 @@ import { JANELAS, JANELA_PADRAO, temEstatistica, seoEstatisticas } from '../asse
 import { DIAS, DIAS_CURTOS, SEMANA, sorteiosDoDia } from '../assets/js/datas.js';
 import { blocoParceiro, ldParceiro, parceiroAtivo, zap } from './parceiro.mjs';
 import { adsTxt, adsenseAtivo, anuncio as anuncioDe, scriptAdsense } from './anuncios.mjs';
+import { manifesto, scriptModoApp, serviceWorker } from './app.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = join(ROOT, 'dist');
@@ -73,6 +74,10 @@ function layout({ titulo, descricao, rota, corpo, scripts = [], extraHead = '', 
 <meta property="og:locale" content="pt_BR">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#101935">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Pimba">
+${scriptModoApp(SITE)}
 <meta name="generator" content="Pimba v${V}">
 <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
@@ -101,6 +106,7 @@ ${ctaWhats()}
       <a class="logo logo-rodape" href="/"><span class="logo-bola" aria-hidden="true">P</span><span class="logo-txt">pimba<b>!</b></span></a>
       <p>${esc(SITE.slogan)}</p>
       <p class="aviso-18"><strong>18+</strong> Jogue com responsabilidade.</p>
+      <p class="instalar-app" data-fora-do-app>${SITE.app?.playStoreUrl ? `<a class="btn btn-sec btn-peq" href="${esc(SITE.app.playStoreUrl)}" target="_blank" rel="noopener">Baixe o app na Play Store</a> ` : ''}<button type="button" class="btn btn-sec btn-peq" id="instalar-app" hidden>Instalar o app</button></p>
     </div>
     <div>
       <h2>Resultados</h2>
@@ -631,7 +637,7 @@ pagTexto('/sobre', 'Sobre o Pimba', 'O Pimba é um site independente com resulta
 <p>Somos um site <strong>independente</strong>. Não somos a CAIXA, não vendemos apostas e não temos vínculo com as Loterias CAIXA. Os resultados vêm das fontes oficiais e são exibidos minutos após cada sorteio.</p>
 <h2>Contato</h2>
 ${SITE.email ? `<p>E-mail: <a href="mailto:${esc(SITE.email)}">${esc(SITE.email)}</a></p>` : ''}
-${parceiroAtivo(SITE.parceiro) && SITE.parceiro.whatsapp ? `<p>WhatsApp: <a href="${zap(SITE.parceiro.whatsapp, 'Olá! Vim pelo site do Pimba.')}" target="_blank" rel="noopener">fale com a gente</a></p>` : ''}
+${parceiroAtivo(SITE.parceiro) && SITE.parceiro.whatsapp ? `<p data-fora-do-app>WhatsApp: <a href="${zap(SITE.parceiro.whatsapp, 'Olá! Vim pelo site do Pimba.')}" target="_blank" rel="noopener">fale com a gente</a></p>` : ''}
 <p>Encontrou um erro em algum resultado? Avise — corrigimos na hora.</p>`);
 
 pagTexto('/jogo-responsavel', 'Jogo responsável', 'Loteria é diversão. Veja como jogar com responsabilidade e onde buscar ajuda.', 'Jogo responsável', `
@@ -707,6 +713,12 @@ salvar('/404', layout({
   corpo: `<section class="secao"><div class="wrap estreito centro"><p class="numero-404">404</p><h1>Essa não saiu</h1><p class="lead">A página que você procurou não existe (ou mudou de lugar com a reforma do site).</p><div class="acoes centro"><a class="btn btn-primario" href="/resultados/">Ver resultados</a><a class="btn btn-sec" href="/">Ir para o início</a></div>${chips()}</div></section>`,
 }), { sitemap: false });
 
+// ---------- OFFLINE (usada pelo service worker do app) ----------
+salvar('/offline', layout({
+  titulo: 'Sem conexão | Pimba', descricao: 'Você está sem internet.', rota: '/offline/', robots: 'noindex',
+  corpo: `<section class="secao"><div class="wrap estreito centro"><p class="numero-404">ops</p><h1>Você está sem internet</h1><p class="lead">Resultados e estatísticas só aparecem com conexão, para você nunca ver um número velho achando que é o último. Assim que a internet voltar, é só tentar de novo.</p><div class="acoes centro"><a class="btn btn-primario" href="">Tentar de novo</a><a class="btn btn-sec" href="/conferidor/">Abrir o conferidor</a></div></div></section>`,
+}), { sitemap: false });
+
 // ---------- arquivos de apoio ----------
 const hoje = new Date().toISOString().slice(0, 10);
 writeFileSync(join(DIST, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>
@@ -767,7 +779,20 @@ writeFileSync(join(DIST, '_headers'), `/*
 
 /assets/fonts/*
   Cache-Control: public, max-age=31536000, immutable
+
+/sw.js
+  Cache-Control: no-cache
+  Service-Worker-Allowed: /
+
+/manifest.webmanifest
+  Content-Type: application/manifest+json; charset=utf-8
+  Cache-Control: public, max-age=3600
 `);
+
+// PWA / app Android
+writeFileSync(join(DIST, 'manifest.webmanifest'), `${JSON.stringify(manifesto(SITE), null, 2)}\n`);
+writeFileSync(join(DIST, 'sw.js'), serviceWorker(V));
+// /.well-known/assetlinks.json é servido pelo Worker a partir de SITE.app.sha256 (veja worker/index.js)
 
 writeFileSync(join(DIST, 'version.txt'), `Pimba v${V}\n`);
 console.log(`Pimba v${V}: ${paginas.length} páginas geradas em dist/`);

@@ -1,5 +1,5 @@
 {
-  // Pimba v1.1.0 — Cloudflare Workers (deploy automático a partir do GitHub)
+  // Pimba v1.4.0 — Cloudflare Workers (deploy automático a partir do GitHub)
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "pimba",
   "main": "worker/index.js",
@@ -10,7 +10,7 @@
     "binding": "ASSETS",
     "html_handling": "auto-trailing-slash",
     "not_found_handling": "404-page",
-    "run_worker_first": ["/api/*", "/resultados/*", "/estatisticas/*"]
+    "run_worker_first": ["/api/*", "/resultados/*", "/estatisticas/*", "/.well-known/*"]
   },
   "observability": { "enabled": true },
   // Builds de branches/PRs no Cloudflare rodam `wrangler preview`, que exige este bloco (pode ficar vazio)
