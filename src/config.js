@@ -3,7 +3,7 @@
 export const SITE = {
   nome: 'Pimba',
   url: 'https://pimba.com.br',
-  versao: '1.2.0',
+  versao: '1.2.1',
   slogan: 'Resultados das loterias, conferidor e bolões — sem enrolação.',
   email: '', // ex.: contato@pimba.com.br (deixe vazio para esconder)
 
@@ -14,7 +14,9 @@ export const SITE = {
   // Regra: o site NÃO vende cotas. Os botões levam ao canal oficial (portal/app Loterias CAIXA) ou ao WhatsApp da lotérica.
   parceiro: {
     ativo: true,
-    nome: 'Sorte Milionária Loterias', // nome de exibição (confirmar com o parceiro)
+    nome: 'Sorte Milionária Loterias', // nome da fachada (confirmado pelo parceiro)
+    // Nome com que a lotérica aparece no portal/app Loterias CAIXA (cadastro antigo). Vazio = igual a `nome`.
+    nomeNaCaixa: 'Neo Broker Imobiliaria',
     razaoSocial: 'SORTE MILIONARIA LOTERIAS LTDA',
     cnpj: '03.790.473/0001-28',
     cidade: 'Goiânia/GO',

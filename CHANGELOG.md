@@ -1,5 +1,12 @@
 # Changelog — Pimba
 
+## v1.2.1 — 2026-11-15
+Nome da lotérica no Loterias CAIXA.
+- No portal e no app Loterias CAIXA, a Sorte Milionária aparece com o nome do cadastro, **Neo Broker Imobiliaria (Goiânia - GO)**. O bloco da lotérica (home e `/boloes/`) agora diz isso em destaque e orienta: "entre em Bolões, procure a lotérica Neo Broker Imobiliaria e toque em Ver Bolões"
+- Novo campo `parceiro.nomeNaCaixa` em `src/config.js` (vazio = igual ao nome da fachada)
+- Nome da fachada "Sorte Milionária" confirmado pelo parceiro
+- 1 teste novo (21 no total)
+
 ## v1.2.0 — 2026-11-14
 Lotérica parceira ativada: Sorte Milionária Loterias (Goiânia/GO).
 - **Bloco da lotérica na home** (logo depois dos últimos resultados) e **na página `/boloes/`**, com endereço, link para o mapa, e-mail, CNPJ e razão social

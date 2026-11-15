@@ -39,9 +39,16 @@ export function blocoParceiro(p, { variante = 'boloes' } = {}) {
     ${p.grupoWhatsapp ? `<a class="btn btn-sec" href="${esc(p.grupoWhatsapp)}" target="_blank" rel="noopener">Entrar no grupo de avisos</a>` : ''}
   </div>`;
 
+  // Nome com que a lotérica aparece no portal/app Loterias CAIXA (pode ser diferente da fachada).
+  const nomeCaixa = p.nomeNaCaixa || p.nome;
+  const cidadeCaixa = p.cidade ? ` (${esc(p.cidade)})` : '';
+  const alvo = `<strong>${esc(nomeCaixa)}</strong>${cidadeCaixa}`;
+  const avisoNome = p.nomeNaCaixa && p.nomeNaCaixa !== p.nome
+    ? `<p class="aviso-nome small"><strong>Atenção:</strong> no Loterias CAIXA, a ${esc(p.nome)} aparece com o nome cadastrado ${alvo}. É a mesma lotérica (mesmo CNPJ).</p>`
+    : '';
   const dicaPortal = direto
-    ? ''
-    : `<p class="small">No portal ou no app Loterias CAIXA, entre em <strong>Bolões</strong> e escolha a <strong>${esc(p.nome)}</strong>${p.cidade ? ` (${esc(p.cidade)})` : ''}.</p>`;
+    ? avisoNome
+    : `<p class="small">No portal ou no app Loterias CAIXA, entre em <strong>Bolões</strong>, procure a lotérica ${alvo} e toque em <strong>Ver Bolões</strong>.</p>${avisoNome}`;
 
   const ident = [p.razaoSocial, p.cnpj && `CNPJ ${p.cnpj}`].filter(Boolean).join(', ');
   const rodape = `<p class="muted small">${esc(p.nome)}${ident ? ` (${esc(ident)})` : ''} é uma lotérica credenciada pela CAIXA. As cotas são vendidas pela própria lotérica, no balcão ou pelo canal oficial Loterias CAIXA, com recibo oficial. O Pimba não é a CAIXA, não vende cotas e não recebe pagamentos: apenas divulga. Proibido para menores de 18 anos.</p>`;
@@ -71,10 +78,11 @@ export function blocoParceiro(p, { variante = 'boloes' } = {}) {
   <h3>Como comprar sua cota</h3>
   <ol class="passos">
     <li>Toque em <strong>Comprar cota no Loterias CAIXA</strong>. Você vai para o portal oficial da CAIXA (ou use o app Loterias CAIXA).</li>
-    <li>Entre com sua conta${direto ? '' : `, abra <strong>Bolões</strong> e escolha a <strong>${esc(p.nome)}</strong>`}.</li>
+    <li>Entre com sua conta${direto ? '' : `, abra <strong>Bolões</strong>, procure a lotérica ${alvo} e toque em <strong>Ver Bolões</strong>`}. Dica: marque como favorita para achar mais rápido da próxima vez.</li>
     <li>Escolha o bolão e a quantidade de cotas e pague no próprio portal.</li>
     <li>O recibo da cota fica na sua conta. É ele que garante o seu prêmio.</li>
   </ol>
+  ${avisoNome}
   <p class="small">Prefere ir pessoalmente? Compre no balcão da lotérica e leve o recibo na hora.</p>
   ${rodape}
 </section>`;

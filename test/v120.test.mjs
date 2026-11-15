@@ -19,7 +19,8 @@ test('sem link direto, o botão leva ao portal oficial e explica como escolher a
   const html = blocoParceiro(base);
   assert.equal(linkCota(base), PORTAL_CAIXA);
   assert.ok(html.includes(`href="${PORTAL_CAIXA}"`));
-  assert.ok(html.includes('escolha a <strong>Lotérica Teste</strong>'));
+  assert.ok(html.includes('procure a lotérica <strong>Lotérica Teste</strong> (Goiânia/GO)'));
+  assert.ok(!html.includes('aparece com o nome cadastrado'), 'sem nome diferente, sem aviso');
   assert.ok(html.includes('não vende cotas'));
   assert.ok(html.includes('menores de 18'));
   assert.ok(!html.includes('wa.me'), 'sem WhatsApp configurado, sem botão');
@@ -46,4 +47,16 @@ test('dados estruturados da lotérica', () => {
   assert.equal(ld.taxID, base.cnpj);
   assert.equal(ld.telephone, '+5562900000000');
   assert.equal(ld.address.addressLocality, 'Goiânia');
+});
+
+test('v1.2.1: nome diferente no Loterias CAIXA vira instrução e aviso', () => {
+  const p = { ...base, nomeNaCaixa: 'Nome Antigo Ltda' };
+  for (const variante of ['boloes', 'home']) {
+    const html = blocoParceiro(p, { variante });
+    assert.ok(html.includes('procure a lotérica <strong>Nome Antigo Ltda</strong>'), variante);
+    assert.ok(html.includes('aparece com o nome cadastrado <strong>Nome Antigo Ltda</strong>'), variante);
+  }
+  // com link direto, o aviso continua (o cliente vê o nome antigo na página da CAIXA)
+  const direto = blocoParceiro({ ...p, linkBoloesCaixa: 'https://www.loteriasonline.caixa.gov.br/x' }, { variante: 'home' });
+  assert.ok(direto.includes('aparece com o nome cadastrado'));
 });

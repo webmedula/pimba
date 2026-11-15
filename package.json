@@ -1,6 +1,6 @@
 {
   "name": "pimba",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Pimba — resultados das loterias, conferidor e bolões (pimba.com.br)",
   "directories": {
     "test": "test"
