@@ -1,5 +1,5 @@
 {
-  // Pimba v1.4.0 — Cloudflare Workers (deploy automático a partir do GitHub)
+  // Pimba v1.4.1 — Cloudflare Workers (deploy automático a partir do GitHub)
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "pimba",
   "main": "worker/index.js",

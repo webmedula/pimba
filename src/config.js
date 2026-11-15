@@ -3,7 +3,7 @@
 export const SITE = {
   nome: 'Pimba',
   url: 'https://pimba.com.br',
-  versao: '1.4.0',
+  versao: '1.4.1',
   slogan: 'Resultados das loterias, conferidor e bolões — sem enrolação.',
   email: '', // ex.: contato@pimba.com.br (deixe vazio para esconder)
 

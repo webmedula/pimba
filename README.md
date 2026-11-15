@@ -1,4 +1,4 @@
-# Pimba — pimba.com.br · v1.4.0
+# Pimba — pimba.com.br · v1.4.1
 
 Site de resultados das loterias da CAIXA, conferidor de apostas, gerador de números, chances reais e bolões (ponte para a lotérica parceira). Sem WordPress: site estático + Cloudflare Worker.
 

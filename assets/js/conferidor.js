@@ -151,9 +151,9 @@ async function executar() {
   ${sorteio}
   ${extra}
   ${veredito}
-  <table class="tabela premios"><thead><tr><th>Faixa</th><th>Ganhadores</th><th>Prêmio</th></tr></thead><tbody>${res.premios
+  <div class="tabela-rolagem"><table class="tabela premios"><thead><tr><th>Faixa</th><th>Ganhadores</th><th>Prêmio</th></tr></thead><tbody>${res.premios
     .map((p, i) => `<tr class="${c.faixas.includes(i) ? 'faixa-sua' : ''}"><td>${esc(p.descricao)}</td><td>${p.ganhadores ? fmtInt(p.ganhadores) : 'Não houve'}</td><td>${p.ganhadores ? brl(p.valor) : '—'}</td></tr>`)
-    .join('')}</tbody></table>
+    .join('')}</tbody></table></div>
   <a class="link-mais" href="/resultados/${lot.slug}/${res.concurso}/">Ver resultado completo →</a>
 </div>`;
 }

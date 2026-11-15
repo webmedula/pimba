@@ -1,4 +1,4 @@
-// Pimba v1.4.0 — comportamento comum a todas as páginas
+// Pimba v1.4.1 — comportamento comum a todas as páginas
 const btn = document.querySelector('.menu-btn');
 const menu = document.getElementById('menu');
 if (btn && menu) {

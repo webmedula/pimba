@@ -140,7 +140,7 @@ h3 { font-size: 1.15rem; margin: 1.2em 0 .5em; }
 
 /* página de resultado */
 .layout-2 { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 32px; align-items: start; }
-@media (max-width: 920px) { .layout-2 { grid-template-columns: 1fr; } }
+@media (max-width: 920px) { .layout-2 { grid-template-columns: minmax(0, 1fr); } }
 .h1-lot { border-left: 8px solid var(--cor); padding-left: 14px; }
 .resultado { background: #fff; border-radius: var(--raio); box-shadow: var(--sombra); padding: 24px; min-height: 200px; }
 .res-topo { border-bottom: 1px solid var(--borda); padding-bottom: 16px; margin-bottom: 16px; }
@@ -180,7 +180,8 @@ h3 { font-size: 1.15rem; margin: 1.2em 0 .5em; }
 .tabela tr.faixa-sua td { background: #fff4cc; font-weight: 700; }
 .tabela .placar { font-weight: 700; text-align: center; white-space: nowrap; }
 .tabela .bilhete { font-weight: 700; font-size: 1.1rem; letter-spacing: .05em; }
-.tabela-rolagem { overflow-x: auto; }
+.tabela-rolagem { overflow-x: auto; max-width: 100%; }
+@media (max-width: 480px) { .tabela th, .tabela td { padding: 8px 6px; } }
 .ponto { color: inherit; text-decoration: none; font-weight: 600; }
 .ponto::before { content: ''; display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--cor); margin-right: 8px; }
 
@@ -225,6 +226,7 @@ h3 { font-size: 1.15rem; margin: 1.2em 0 .5em; }
 .passos { padding-left: 22px; }
 .passos li { margin-bottom: 8px; }
 .texto p, .texto li { max-width: 70ch; }
+.texto a { overflow-wrap: anywhere; }
 .numero-404 { font-size: 6rem; font-weight: 900; margin: 0; color: var(--amarelo-2); line-height: 1; }
 
 /* anúncios */

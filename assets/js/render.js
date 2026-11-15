@@ -111,13 +111,13 @@ export function renderCard(r, lot) {
 export function renderResultado(r, lot) {
   let sorteio = '';
   if (lot.tipo === 'loteca') {
-    sorteio = `<table class="tabela loteca"><thead><tr><th>#</th><th>Mandante</th><th>Placar</th><th>Visitante</th></tr></thead><tbody>${r.jogos
+    sorteio = `<div class="tabela-rolagem"><table class="tabela loteca"><thead><tr><th>#</th><th>Mandante</th><th>Placar</th><th>Visitante</th></tr></thead><tbody>${r.jogos
       .map((j) => `<tr><td>${j.n}</td><td>${esc(j.mandante)}</td><td class="placar">${j.golsM ?? '-'} × ${j.golsV ?? '-'}</td><td>${esc(j.visitante)}</td></tr>`)
-      .join('')}</tbody></table>`;
+      .join('')}</tbody></table></div>`;
   } else if (lot.tipo === 'federal') {
-    sorteio = `<table class="tabela"><thead><tr><th>Prêmio</th><th>Bilhete</th><th>Valor</th></tr></thead><tbody>${r.dezenas
+    sorteio = `<div class="tabela-rolagem"><table class="tabela"><thead><tr><th>Prêmio</th><th>Bilhete</th><th>Valor</th></tr></thead><tbody>${r.dezenas
       .map((b, i) => `<tr><td>${i + 1}º</td><td class="bilhete">${esc(b)}</td><td>${brl(r.premios[i]?.valor)}</td></tr>`)
-      .join('')}</tbody></table>`;
+      .join('')}</tbody></table></div>`;
   } else {
     sorteio = `<h2 class="h-sorteio">${r.dezenas2.length ? '1º sorteio' : 'Números sorteados'}</h2>${bolas(r.dezenas, lot, 'grandes')}`;
     if (r.dezenas2.length) sorteio += `<h2 class="h-sorteio">2º sorteio</h2>${bolas(r.dezenas2, lot, 'grandes')}`;
@@ -129,9 +129,9 @@ export function renderResultado(r, lot) {
   }
 
   const premios = lot.tipo === 'federal' ? '' : `<h2>Premiação</h2>
-<table class="tabela premios"><thead><tr><th>Faixa</th><th>Ganhadores</th><th>Prêmio</th></tr></thead><tbody>${r.premios
+<div class="tabela-rolagem"><table class="tabela premios"><thead><tr><th>Faixa</th><th>Ganhadores</th><th>Prêmio</th></tr></thead><tbody>${r.premios
     .map((p) => `<tr data-faixa="${esc(p.descricao)}"><td>${esc(p.descricao)}</td><td>${p.ganhadores ? fmtInt(p.ganhadores) : 'Não houve'}</td><td>${p.ganhadores ? brl(p.valor) : '—'}</td></tr>`)
-    .join('')}</tbody></table>`;
+    .join('')}</tbody></table></div>`;
 
   const locais = r.ganhadoresLocais.length
     ? `<h3>Onde saiu o prêmio principal</h3><ul class="lista-locais">${r.ganhadoresLocais
