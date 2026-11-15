@@ -3,7 +3,7 @@
 export const SITE = {
   nome: 'Pimba',
   url: 'https://pimba.com.br',
-  versao: '1.2.0',
+  versao: '1.3.0',
   slogan: 'Resultados das loterias, conferidor e bolões — sem enrolação.',
   email: '', // ex.: contato@pimba.com.br (deixe vazio para esconder)
 
@@ -34,6 +34,14 @@ export const SITE = {
   },
 
   // Monetização / métricas (vazio = desligado)
-  adsenseClient: '', // ex.: ca-pub-1234567890123456
+  adsenseClient: 'ca-pub-6982528073256938', // código de editor do AdSense (gera o script no <head> e o /ads.txt)
+  // IDs dos blocos de anúncio criados no AdSense (Anúncios > Por bloco de anúncios > Display).
+  // `padrao` vale para todos os espaços; os outros, se preenchidos, substituem o padrão naquele lugar.
+  // Sem ID, o espaço não aparece e ficam só os anúncios automáticos (se ligados no painel do AdSense).
+  adsenseSlots: {
+    padrao: '',
+    resultado: '', // abaixo do resultado de cada loteria
+    estatisticas: '', // no meio das páginas de estatísticas
+  },
   googleAnalyticsId: '', // ex.: G-XXXXXXXXXX
 };

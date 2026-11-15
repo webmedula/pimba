@@ -8,6 +8,7 @@ import { esc, brl, fmtInt } from '../assets/js/render.js';
 import { JANELAS, JANELA_PADRAO, temEstatistica, seoEstatisticas } from '../assets/js/stats.js';
 import { DIAS, DIAS_CURTOS, SEMANA, sorteiosDoDia } from '../assets/js/datas.js';
 import { blocoParceiro, ldParceiro, parceiroAtivo, zap } from './parceiro.mjs';
+import { adsTxt, adsenseAtivo, anuncio as anuncioDe, scriptAdsense } from './anuncios.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = join(ROOT, 'dist');
@@ -44,10 +45,7 @@ const NAV = [
   ['/probabilidades/', 'Chances'],
 ];
 
-const anuncio = (posicao) =>
-  SITE.adsenseClient
-    ? `<div class="ad-slot" data-pos="${posicao}"><ins class="adsbygoogle" style="display:block" data-ad-client="${SITE.adsenseClient}" data-ad-format="auto" data-full-width-responsive="true"></ins><script>(adsbygoogle=window.adsbygoogle||[]).push({});</script></div>`
-    : '';
+const anuncio = (posicao) => anuncioDe(SITE, posicao);
 
 const ctaWhats = () =>
   SITE.whatsappLista
@@ -81,7 +79,7 @@ function layout({ titulo, descricao, rota, corpo, scripts = [], extraHead = '', 
 <link rel="preload" href="/assets/fonts/outfit.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/assets/css/style.css?v=${V}">
 ${SITE.googleAnalyticsId ? `<script async src="https://www.googletagmanager.com/gtag/js?id=${SITE.googleAnalyticsId}"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','${SITE.googleAnalyticsId}');</script>` : ''}
-${SITE.adsenseClient ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${SITE.adsenseClient}" crossorigin="anonymous"></script>` : ''}
+${scriptAdsense(SITE)}
 ${extraHead}
 </head>
 <body>
@@ -124,7 +122,7 @@ ${ctaWhats()}
       <ul>
         <li><a href="/sobre/">Sobre e contato</a></li>
         <li><a href="/jogo-responsavel/">Jogo responsável</a></li>
-        <li><a href="/privacidade/">Privacidade</a></li>
+        <li><a href="/privacidade/">Privacidade e cookies</a></li>
         <li><a href="/termos/">Termos de uso</a></li>
       </ul>
     </div>
@@ -206,8 +204,6 @@ salvar('/', layout({
 
 ${blocoParceiro(SITE.parceiro, { variante: 'home' })}
 
-${anuncio('home-meio')}
-
 <section class="secao secao-alt">
   <div class="wrap">
     <h2>Ferramentas grátis</h2>
@@ -221,6 +217,8 @@ ${anuncio('home-meio')}
     </div>
   </div>
 </section>
+
+${anuncio('home-meio')}
 
 <section class="secao">
   <div class="wrap faq">
@@ -646,15 +644,52 @@ pagTexto('/jogo-responsavel', 'Jogo responsável', 'Loteria é diversão. Veja c
   <li>Se o jogo está tirando seu sono, seu dinheiro ou sua paz, peça ajuda. O CVV atende 24h pelo 188, e o SUS oferece apoio nos CAPS.</li>
 </ul>`);
 
-pagTexto('/privacidade', 'Política de privacidade', 'Como o Pimba trata seus dados, conforme a LGPD.', 'Política de privacidade', `
-<p>Última atualização: versão ${V}.</p>
+const contatoPriv = SITE.email
+  ? `pelo e-mail <a href="mailto:${esc(SITE.email)}">${esc(SITE.email)}</a> ou pelos canais da página <a href="/sobre/">Sobre e contato</a>`
+  : 'pelos canais da página <a href="/sobre/">Sobre e contato</a>';
+pagTexto('/privacidade', 'Política de privacidade e cookies', 'Como o Pimba trata seus dados e usa cookies (Google AdSense e Analytics), conforme a LGPD.', 'Política de privacidade e cookies', `
+<p>Última atualização: 15/11/2026 (versão ${V}).</p>
+<p>Esta política explica quais dados o Pimba (pimba.com.br) trata, para quê e quais são os seus direitos, conforme a Lei Geral de Proteção de Dados (Lei 13.709/2018, LGPD).</p>
+<h2>Quem é o responsável</h2>
+<p>O controlador dos dados é o Pimba, site independente de informação sobre loterias. Fale com a gente sobre privacidade ${contatoPriv}.</p>
 <h2>O que coletamos</h2>
-<p>O Pimba não exige cadastro. Os números que você digita no conferidor e no gerador ficam apenas no seu navegador e não são enviados a nós.</p>
-<p>Podemos usar ferramentas de terceiros que utilizam cookies: <strong>Google Analytics</strong> (estatísticas de visitas, de forma agregada) e <strong>Google AdSense</strong> (exibição de anúncios, que pode ser personalizada com base na sua navegação). Você pode gerenciar a personalização de anúncios em <a href="https://adssettings.google.com" rel="noopener" target="_blank">adssettings.google.com</a> e bloquear cookies no seu navegador.</p>
+<ul class="lista-check">
+  <li><strong>Nada de cadastro.</strong> O Pimba não pede nome, CPF nem senha.</li>
+  <li><strong>Seus números ficam com você.</strong> O que você digita no conferidor e no gerador fica só no seu navegador e não é enviado a nós.</li>
+  <li><strong>Dados técnicos de acesso</strong> (endereço IP, navegador, páginas visitadas, data e hora), registrados pela nossa hospedagem (Cloudflare) para segurança e funcionamento do site.</li>
+  <li><strong>Cookies e identificadores de terceiros</strong>, descritos abaixo.</li>
+</ul>
+<h2>Anúncios (Google AdSense)</h2>
+<p>O Pimba é gratuito e se mantém com anúncios exibidos pelo Google AdSense. Sobre esses anúncios:</p>
+<ul class="lista-check">
+  <li>Fornecedores terceiros, incluindo o Google, usam cookies para veicular anúncios com base nas suas visitas anteriores a este e a outros sites.</li>
+  <li>Com os cookies de publicidade, o Google e seus parceiros podem mostrar anúncios com base nas suas visitas ao Pimba e a outros sites da internet.</li>
+  <li>Você pode desativar a publicidade personalizada nas <a href="https://adssettings.google.com" rel="noopener" target="_blank">Configurações de anúncios do Google</a>. Também pode desativar cookies de outros fornecedores de publicidade personalizada em <a href="https://www.aboutads.info/choices/" rel="noopener" target="_blank">aboutads.info</a>.</li>
+  <li>Veja como o Google usa os dados dos sites parceiros em <a href="https://policies.google.com/technologies/partner-sites?hl=pt-BR" rel="noopener" target="_blank">policies.google.com/technologies/partner-sites</a>.</li>
+  <li>Os anúncios são do Google e de anunciantes. O Pimba não escolhe cada anúncio, não vende apostas e não tem relação com os anunciantes. Os anúncios não aparecem na página de bolões.</li>
+</ul>
+<h2>Estatísticas de visitas (Google Analytics)</h2>
+<p>Se ativado, o Google Analytics conta visitas e páginas mais vistas de forma agregada, para sabermos o que melhorar. Você pode bloqueá-lo com o <a href="https://tools.google.com/dlpage/gaoptout?hl=pt-BR" rel="noopener" target="_blank">complemento de desativação do Google Analytics</a>.</p>
+<h2>Como controlar os cookies</h2>
+<p>Você pode apagar ou bloquear cookies nas configurações do seu navegador (Chrome, Safari, Firefox, Edge) ou navegar em janela anônima. O site continua funcionando sem cookies; os anúncios só deixam de ser personalizados.</p>
+<h2>Para que usamos os dados e com qual base legal</h2>
+<ul class="lista-check">
+  <li><strong>Funcionamento e segurança do site</strong> (registros técnicos): legítimo interesse.</li>
+  <li><strong>Anúncios e estatísticas de visitas</strong> (cookies de terceiros): legítimo interesse e, quando exigido, o seu consentimento, que você controla pelo navegador e pelas configurações do Google.</li>
+  <li><strong>Lista de avisos por WhatsApp ou e-mail</strong>: o seu consentimento, ao entrar na lista.</li>
+</ul>
 <h2>Contatos por WhatsApp</h2>
 <p>Se você entrar na nossa lista ou falar conosco pelo WhatsApp, seu número é usado apenas para enviar o que você pediu. Você pode sair a qualquer momento.</p>
+<h2>Compartilhamento e transferência internacional</h2>
+<p>Não vendemos dados pessoais. Os dados técnicos e os cookies são tratados pelos fornecedores citados (Google e Cloudflare), que podem processá-los fora do Brasil, com as garantias previstas na LGPD.</p>
+<h2>Por quanto tempo guardamos</h2>
+<p>Registros técnicos são guardados pelo tempo necessário à segurança do site. Os cookies de terceiros seguem os prazos de cada fornecedor e podem ser apagados por você a qualquer momento.</p>
 <h2>Seus direitos (LGPD)</h2>
-<p>Você pode pedir acesso, correção ou exclusão dos seus dados pelos nossos canais de contato na página <a href="/sobre/">Sobre</a>.</p>`);
+<p>Você pode pedir confirmação de que tratamos seus dados, acesso, correção, exclusão, informação sobre compartilhamento e revogação do consentimento ${contatoPriv}. Também pode reclamar à Autoridade Nacional de Proteção de Dados (<a href="https://www.gov.br/anpd" rel="noopener" target="_blank">ANPD</a>).</p>
+<h2>Menores de idade</h2>
+<p>Apostas em loterias são proibidas para menores de 18 anos. O Pimba não é direcionado a crianças e adolescentes.</p>
+<h2>Mudanças nesta política</h2>
+<p>Quando esta política mudar, atualizamos a data no topo da página.</p>`);
 
 pagTexto('/termos', 'Termos de uso', 'Termos de uso do site Pimba.', 'Termos de uso', `
 <p>Ao usar o Pimba você concorda com estes termos.</p>
@@ -687,8 +722,8 @@ Disallow: /api/
 Sitemap: ${SITE.url}/sitemap.xml
 `);
 
-if (SITE.adsenseClient) {
-  writeFileSync(join(DIST, 'ads.txt'), `google.com, ${SITE.adsenseClient.replace('ca-', '')}, DIRECT, f08c47fec0942fa0\n`);
+if (adsenseAtivo(SITE)) {
+  writeFileSync(join(DIST, 'ads.txt'), adsTxt(SITE));
 }
 
 // Redirecionamentos do WordPress/WooCommerce antigo
