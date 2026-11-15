@@ -229,6 +229,7 @@ h3 { font-size: 1.15rem; margin: 1.2em 0 .5em; }
 
 /* anúncios */
 .ad-slot { margin: 24px auto; min-height: 100px; text-align: center; }
+.ad-rotulo { margin: 0 0 4px; font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 
 /* cta whatsapp */
 .cta-whats { background: #e9fbef; border-top: 1px solid #c4f0d3; padding: 28px 0; }

@@ -1,11 +1,21 @@
 # Changelog — Pimba
 
-## v1.2.1 — 2026-11-15
+## v1.3.1 — 2026-11-15
 Nome da lotérica no Loterias CAIXA.
 - No portal e no app Loterias CAIXA, a Sorte Milionária aparece com o nome do cadastro, **Neo Broker Imobiliaria (Goiânia - GO)**. O bloco da lotérica (home e `/boloes/`) agora diz isso em destaque e orienta: "entre em Bolões, procure a lotérica Neo Broker Imobiliaria e toque em Ver Bolões"
 - Novo campo `parceiro.nomeNaCaixa` em `src/config.js` (vazio = igual ao nome da fachada)
 - Nome da fachada "Sorte Milionária" confirmado pelo parceiro
-- 1 teste novo (21 no total)
+- 1 teste novo (27 no total)
+
+## v1.3.0 — 2026-11-15
+Google AdSense ligado (editor `ca-pub-6982528073256938`).
+- **Script do AdSense no `<head>` de todas as páginas** (42), igual ao código do painel
+- **`/ads.txt`** na raiz: `google.com, pub-6982528073256938, DIRECT, f08c47fec0942fa0`
+- **Espaços de anúncio** com rótulo "Publicidade": abaixo do resultado de cada loteria, no meio das páginas de estatísticas, e nos espaços já previstos (home, conferidor, gerador, chances, calendário)
+- Os espaços só aparecem quando houver ID de bloco em `adsenseSlots` (`src/config.js`). `padrao` vale para todos; `resultado` e `estatisticas` podem ter blocos próprios. Sem ID, ficam só os anúncios automáticos, se ligados no painel
+- **Longe da lotérica:** o anúncio da home saiu de baixo do bloco da Sorte Milionária e foi para depois das ferramentas; a página `/boloes/` continua sem anúncio. Teste garante as duas coisas
+- **Política de privacidade e cookies** reescrita para o AdSense e a LGPD: cookies de terceiros do Google, como desativar anúncios personalizados, link "como o Google usa dados", bases legais, transferência internacional, direitos e ANPD. Link no rodapé virou "Privacidade e cookies"
+- Código do AdSense separado em `scripts/anuncios.mjs`; 6 testes novos (26 no total)
 
 ## v1.2.0 — 2026-11-14
 Lotérica parceira ativada: Sorte Milionária Loterias (Goiânia/GO).

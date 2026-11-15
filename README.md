@@ -1,4 +1,4 @@
-# Pimba — pimba.com.br · v1.2.1
+# Pimba — pimba.com.br · v1.3.1
 
 Site de resultados das loterias da CAIXA, conferidor de apostas, gerador de números, chances reais e bolões (ponte para a lotérica parceira). Sem WordPress: site estático + Cloudflare Worker.
 
@@ -39,7 +39,8 @@ Todo push na `main` publica sozinho.
 Edite `src/config.js`:
 - `parceiro`: já ativo com a Sorte Milionária Loterias (v1.2.0). Preencha `horario`, `whatsapp`, `grupoWhatsapp` e `linkBoloesCaixa` (só aceita `*.caixa.gov.br`) quando o parceiro enviar; os botões aparecem sozinhos.
 - `whatsappLista`: link do grupo/comunidade de avisos.
-- `adsenseClient` / `googleAnalyticsId`: quando tiver as contas (o `ads.txt` é gerado sozinho).
+- `adsenseClient`: código de editor do AdSense (o script no `<head>` e o `ads.txt` são gerados sozinhos). `adsenseSlots`: IDs dos blocos de anúncio; sem ID, os espaços ficam escondidos. Os anúncios nunca aparecem na página de bolões nem colados no bloco da lotérica.
+- `googleAnalyticsId`: quando tiver a conta.
 
 ## Testar localmente
 
