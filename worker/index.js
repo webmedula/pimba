@@ -1,4 +1,4 @@
-// Pimba v1.4.1 — Cloudflare Worker
+// Pimba v1.5.0 — Cloudflare Worker
 // - /.well-known/assetlinks.json → liga o app Android (TWA) ao site, a partir de SITE.app.sha256
 // - Serve os arquivos estáticos de dist/ (binding ASSETS)
 // - /api/resultado/:slug[/:concurso] e /api/resultados → proxy da API da Caixa, normalizado e com cache

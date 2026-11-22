@@ -315,3 +315,13 @@ h3 { font-size: 1.15rem; margin: 1.2em 0 .5em; }
 .instalar-app { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
 .instalar-app:empty { display: none; }
 @media (display-mode: standalone) { .instalar-app { display: none; } }
+
+/* v1.5.0 — modos do gerador */
+.seletor-modo .opt-lot { --cor: var(--navy); }
+.seletor-modo .opt-quentes { --cor: #d9480f; }
+.seletor-modo .opt-frios { --cor: #1971c2; }
+.seletor-modo .opt-equilibrado { --cor: #2b8a3e; }
+.seletor-modo .opt-lot input:disabled + span { opacity: .4; cursor: not-allowed; }
+.ger-modo-desc { flex-basis: 100%; margin: 2px 0 0; }
+.ger-nota-modo { margin: 12px 0 4px; padding: 10px 14px; border-radius: 10px; background: var(--fundo); font-size: .9rem; }
+.ger-aviso { margin: 16px 0 0; }
