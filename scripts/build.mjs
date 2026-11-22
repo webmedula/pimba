@@ -6,6 +6,7 @@ import { SITE } from '../src/config.js';
 import { LOTERIAS, POR_SLUG } from '../assets/js/loterias.js';
 import { esc, brl, fmtInt } from '../assets/js/render.js';
 import { JANELAS, JANELA_PADRAO, temEstatistica, seoEstatisticas } from '../assets/js/stats.js';
+import { MODOS, MODO_PADRAO } from '../assets/js/modos.js';
 import { DIAS, DIAS_CURTOS, SEMANA, sorteiosDoDia } from '../assets/js/datas.js';
 import { blocoParceiro, ldParceiro, parceiroAtivo, zap } from './parceiro.mjs';
 import { adsTxt, adsenseAtivo, anuncio as anuncioDe, scriptAdsense } from './anuncios.mjs';
@@ -335,35 +336,61 @@ salvar('/conferidor', layout({
 
 // ---------- GERADOR ----------
 const geraveis = LOTERIAS.filter((l) => l.tipo === 'dezenas' || l.tipo === 'colunas');
+const faqGerador = [
+  ['O que são números quentes e frios?', 'Quentes são os números que mais saíram nos últimos concursos. Frios são os que estão há mais tempo sem sair. No modo Quentes ou Frios, o gerador dá mais peso a esses números ao montar seu jogo, usando os resultados oficiais da CAIXA.'],
+  ['Jogar nos números quentes ou frios aumenta a chance de ganhar?', 'Não. As bolas não têm memória: em cada sorteio todos os números têm exatamente a mesma chance, não importa o que saiu antes. Os modos são só um jeito divertido de escolher. Qualquer jogo gerado tem a mesma probabilidade de qualquer outro.'],
+  ['Para que serve o modo Equilibrado?', 'Ele monta jogos com pares e ímpares na mesma medida e números espalhados por todo o volante, parecidos com a maioria dos resultados. Também não aumenta a chance: um jogo como 1, 2, 3, 4, 5, 6 tem a mesma probabilidade, só é menos comum por existirem poucas combinações assim.'],
+  ['O que muda a chance de ganhar, então?', 'Apenas a quantidade de combinações que você joga: marcar mais números no volante ou participar de bolões. Veja a conta exata de cada loteria na página de chances.'],
+];
 salvar('/gerador', layout({
-  titulo: 'Gerador de números para loterias — Mega-Sena, Lotofácil e mais | Pimba',
-  descricao: 'Gere números aleatórios para Mega-Sena, Lotofácil, Quina, Lotomania, Timemania, Dupla Sena, Dia de Sorte, Super Sete e +Milionária. Grátis e sem cadastro.',
+  titulo: 'Gerador de números para loterias com números quentes e frios | Pimba',
+  descricao: 'Gere jogos para Mega-Sena, Lotofácil, Quina, Lotomania, Timemania, Dupla Sena, Dia de Sorte, Super Sete e +Milionária: aleatório puro, números quentes, frios ou equilibrado. Grátis e sem cadastro.',
   rota: '/gerador/',
   scripts: ['gerador.js'],
+  extraHead: `<script type="application/ld+json">${JSON.stringify({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faqGerador.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) })}</script>`,
   corpo: `
 <section class="secao">
   <div class="wrap estreito">
     ${migalhas([['Início', '/'], ['Gerador de números', '/gerador/']])}
     <h1>Gerador de números</h1>
-    <p class="lead">Sorteio aleatório de verdade (gerador criptográfico do seu navegador). Útil quando bate a dúvida na hora de marcar o volante.</p>
+    <p class="lead">Gere seus jogos no aleatório puro ou brinque com as estatísticas: números quentes, frios ou um jogo equilibrado. Sorteio feito com o gerador criptográfico do seu navegador.</p>
     <div class="ferramenta" id="gerador">
       <fieldset class="seletor-lot"><legend>Loteria</legend>
         ${geraveis.map((l, i) => `<label class="opt-lot" style="--cor:${l.cor}"><input type="radio" name="lot" value="${l.slug}"${i === 0 ? ' checked' : ''}><span>${esc(l.nome)}</span></label>`).join('')}
       </fieldset>
+      <fieldset class="seletor-lot seletor-modo"><legend>Modo</legend>
+        ${MODOS.map((m) => `<label class="opt-lot opt-modo opt-${m.id}"><input type="radio" name="modo" value="${m.id}"${m.id === MODO_PADRAO ? ' checked' : ''}><span>${esc(m.nome)}</span></label>`).join('')}
+        <p class="ger-modo-desc muted small" id="ger-modo-desc">${esc(MODOS[0].curto)}</p>
+      </fieldset>
       <div class="linha-campos">
         <label>Números por jogo <select id="ger-qtd"></select></label>
         <label>Quantos jogos <select id="ger-jogos">${[1, 2, 3, 4, 5, 10].map((n) => `<option>${n}</option>`).join('')}</select></label>
+        <label id="ger-campo-janela" hidden>Com base nos últimos <select id="ger-janela">${JANELAS.map((n) => `<option value="${n}"${n === JANELA_PADRAO ? ' selected' : ''}>${n} concursos</option>`).join('')}</select></label>
       </div>
       <div class="acoes">
         <button class="btn btn-primario" id="ger-ok" type="button">Gerar números</button>
         <button class="btn btn-sec" id="ger-copiar" type="button" hidden>Copiar jogos</button>
       </div>
+      <p class="small"><a id="ger-link-est" href="/estatisticas/" hidden>Ver as estatísticas</a></p>
       <div id="ger-saida" aria-live="polite"></div>
     </div>
     ${anuncio('gerador')}
     <div class="aviso">
-      <strong>Sem ilusão:</strong> números gerados aleatoriamente têm exatamente a mesma chance de qualquer outra combinação. Nenhum gerador, método ou "inteligência artificial" aumenta sua probabilidade de ganhar. <a href="/probabilidades/">Veja as chances reais</a>.
+      <strong>Sem ilusão:</strong> em cada sorteio todos os números têm exatamente a mesma chance. Quentes, frios ou equilibrado são só formas divertidas de escolher: nenhum gerador, método ou "inteligência artificial" aumenta sua probabilidade de ganhar. <a href="/probabilidades/">Veja as chances reais</a>.
     </div>
+    <section class="como-jogar">
+      <h2>Os modos do gerador</h2>
+      <ul class="lista-check">
+        <li><strong>Aleatório puro:</strong> todos os números com o mesmo peso, exatamente como no sorteio da CAIXA.</li>
+        <li><strong>Quentes:</strong> dá mais peso aos números que mais saíram nos últimos 10, 25, 50 ou 100 concursos (você escolhe).</li>
+        <li><strong>Frios:</strong> dá mais peso aos números que estão há mais tempo sem sair. No Super Sete, aos que menos saíram em cada coluna.</li>
+        <li><strong>Equilibrado:</strong> pares e ímpares na mesma medida e números espalhados por todo o volante.</li>
+      </ul>
+      <p>Quer ver os números antes de jogar? Confira os números que mais saem em cada loteria:</p>
+      ${chips('', 'estatisticas', geraveis)}
+      <h2>Perguntas frequentes</h2>
+      <section class="faq">${faqGerador.map(([q, a]) => `<details><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`).join('')}</section>
+    </section>
   </div>
 </section>`,
 }), { prioridade: '0.8' });
@@ -512,7 +539,8 @@ for (const l of comEstatistica) {
     </div>
     <aside class="lateral">
       <a class="box-acao" style="--cor:${l.cor}" href="/resultados/${l.slug}/"><strong>Último resultado</strong><span>Números, ganhadores e prêmios</span></a>
-      <a class="box-acao box-acao-sec" href="/gerador/?l=${l.slug}"><strong>Gerar números</strong><span>Palpites aleatórios para a ${esc(l.nome)}</span></a>
+      <a class="box-acao box-acao-sec" href="/gerador/?l=${l.slug}&amp;modo=quentes"><strong>Gerar com os quentes</strong><span>Jogo com mais peso para os números que mais saíram</span></a>
+      <a class="box-acao box-acao-sec" href="/gerador/?l=${l.slug}&amp;modo=frios"><strong>Gerar com os frios</strong><span>Jogo com mais peso para os atrasados</span></a>
       <a class="box-acao box-acao-sec" href="/calendario/${l.slug}/"><strong>Quando é o sorteio</strong><span>${esc(l.dias)}</span></a>
       <div class="box-outras"><h2>Outras estatísticas</h2>${chips(l.slug, 'estatisticas', comEstatistica)}</div>
     </aside>

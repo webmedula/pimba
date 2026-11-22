@@ -1,4 +1,4 @@
-// Pimba v1.1.0 — estatísticas dos últimos concursos (cálculo e HTML; usado no Worker, no navegador e nos testes)
+// Pimba v1.5.0 — estatísticas dos últimos concursos (cálculo e HTML; usado no Worker, no navegador e nos testes)
 // Estatística descreve o passado. Cada sorteio é independente: nada aqui aumenta a chance de ganhar.
 import { esc, fmtInt } from './render.js';
 
@@ -156,7 +156,7 @@ ${extras}`;
 /** <title> e meta description. */
 export function seoEstatisticas(lot) {
   return {
-    title: `Estatísticas da ${lot.nome}: números mais e menos sorteados | Pimba`,
-    description: `Números que mais saíram, os que menos saíram e os atrasados da ${lot.nome} nos últimos concursos, com explicação honesta: estatística não aumenta a chance de ganhar.`,
+    title: `Números que mais saem na ${lot.nome}: estatísticas e atrasados | Pimba`,
+    description: `Números que mais saíram, os que menos saíram e os atrasados da ${lot.nome} nos últimos concursos. Gere um jogo com os quentes ou os frios, com explicação honesta: estatística não aumenta a chance de ganhar.`,
   };
 }

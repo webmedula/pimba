@@ -1,5 +1,15 @@
 # Changelog — Pimba
 
+## v1.5.0 — 2026-11-22
+Gerador com modos: Aleatório puro, Quentes, Frios e Equilibrado, usando as estatísticas da v1.1.0.
+- **Quentes:** dá mais peso aos números que mais saíram nos últimos 10, 25, 50 ou 100 concursos (o usuário escolhe). **Frios:** mais peso aos que estão há mais tempo sem sair (no Super Sete, aos que menos saíram em cada coluna). Trevos da +Milionária e Mês de Sorte também seguem o modo
+- **Peso pela posição no ranking:** o número mais quente (ou mais frio) fica até 9x mais provável de entrar no jogo que o último, mas todo número continua possível, então os jogos variam a cada clique
+- **Equilibrado:** pares e ímpares na mesma medida e números espalhados pelas 5 faixas do volante (Super Sete: 3 ou 4 pares e dígitos variados). Não precisa de internet
+- **Aviso honesto em cada jogo gerado:** "Isso não muda sua chance: em cada sorteio todos os números têm a mesma probabilidade. É só por diversão." Nenhum texto promete chance maior (teste garante)
+- Sem internet ou com a CAIXA fora do ar, Quentes/Frios avisam e geram no Aleatório puro. O modo fica no endereço (`/gerador/?l=mega-sena&modo=quentes`), dá para compartilhar
+- **SEO:** página do gerador com novo título ("números quentes e frios"), seção "Os modos do gerador", links para as estatísticas de cada loteria e FAQ com dados estruturados (FAQPage). Páginas de estatísticas passam a se chamar "Números que mais saem na <loteria>" e ganham os atalhos "Gerar com os quentes" e "Gerar com os frios"
+- Lógica dos modos em `assets/js/modos.js`; 10 testes novos (45 no total)
+
 ## v1.4.1 — 2026-11-15
 Correção: no celular a página "escapava" para o lado (rolagem horizontal). Ajuste pontual, sem mudar o visual.
 - **Causa principal:** abaixo de 920px a grade `.layout-2` (resultados e estatísticas) virava `1fr`, que deixa a coluna crescer até o item mais largo. Agora é `minmax(0, 1fr)`, e a coluna respeita a largura da tela

@@ -1,4 +1,4 @@
-# Pimba — pimba.com.br · v1.4.1
+# Pimba — pimba.com.br · v1.5.0
 
 Site de resultados das loterias da CAIXA, conferidor de apostas, gerador de números, chances reais e bolões (ponte para a lotérica parceira). Sem WordPress: site estático + Cloudflare Worker.
 
@@ -12,13 +12,14 @@ Site de resultados das loterias da CAIXA, conferidor de apostas, gerador de núm
 | `assets/js/render.js` | Normaliza o JSON da CAIXA e monta o HTML (usado no Worker e no navegador) |
 | `assets/js/conferir.js` | Lógica do conferidor (testada) |
 | `assets/js/stats.js` | Cálculo e HTML das estatísticas (testado) |
+| `assets/js/modos.js` | Modos do gerador: Aleatório puro, Quentes, Frios e Equilibrado (testado) |
 | `assets/js/datas.js` | Calendário: próximas datas no horário de Brasília (testado) |
 | `scripts/app.mjs` | App: manifesto do PWA, service worker, assetlinks e "modo app" Android |
 | `android/twa-manifest.json` | Configuração do pacote Android (TWA/Bubblewrap). Guia em `docs/ANDROID.md` |
 | `src/config.js` | **Configurações editáveis**: lotérica parceira, WhatsApp, AdSense, Analytics, app Android |
 
 ### Páginas
-`/` · `/resultados/` · `/resultados/<loteria>/` (11 loterias) · `/resultados/<loteria>/<concurso>/` · `/estatisticas/` · `/estatisticas/<loteria>/` (9) · `/calendario/` · `/calendario/<loteria>/` (10) · `/conferidor/` · `/gerador/` · `/boloes/` · `/probabilidades/` · `/sobre/` · `/jogo-responsavel/` · `/privacidade/` · `/termos/`
+`/` · `/resultados/` · `/resultados/<loteria>/` (11 loterias) · `/resultados/<loteria>/<concurso>/` · `/estatisticas/` · `/estatisticas/<loteria>/` (9) · `/calendario/` · `/calendario/<loteria>/` (10) · `/conferidor/` · `/gerador/` (`?l=<loteria>&modo=quentes|frios|equilibrado`) · `/boloes/` · `/probabilidades/` · `/sobre/` · `/jogo-responsavel/` · `/privacidade/` · `/termos/`
 
 ### API interna
 - `GET /api/resultado/<loteria>` — último concurso
