@@ -325,3 +325,22 @@ h3 { font-size: 1.15rem; margin: 1.2em 0 .5em; }
 .ger-modo-desc { flex-basis: 100%; margin: 2px 0 0; }
 .ger-nota-modo { margin: 12px 0 4px; padding: 10px 14px; border-radius: 10px; background: var(--fundo); font-size: .9rem; }
 .ger-aviso { margin: 16px 0 0; }
+
+/* v1.6.0 — blog e contato */
+@media (min-width: 821px) and (max-width: 1100px) { .menu a { padding: 8px 9px; font-size: .95rem; } }
+.grid-blog { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+.card-blog { display: flex; flex-direction: column; gap: 6px; background: var(--branco); }
+.card-blog h2, .card-blog h3 { margin: 0; font-size: 1.12rem; line-height: 1.25; }
+.card-blog p { flex: 1; font-size: .95rem; }
+.card-blog-cat { margin: 0; font-size: .75rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #8a5a00; }
+.card-blog-meta { font-size: .82rem; color: var(--muted); }
+.artigo-meta { color: var(--muted); font-size: .92rem; margin: 0 0 24px; }
+.artigo-meta a { color: inherit; }
+.artigo h2 { margin-top: 1.8em; }
+.artigo .tabela-rolagem { margin: 12px 0; }
+.destaque-formula { background: var(--branco); border: 1px solid var(--borda); border-radius: 12px; padding: 12px 16px; overflow-wrap: anywhere; }
+.leia-tambem { margin-top: 32px; }
+.leia-tambem .card-blog p { display: none; }
+.contato-box { background: var(--branco); border: 1px solid var(--borda); border-radius: var(--raio); padding: 20px 22px; margin: 20px 0; }
+.contato-rotulo { margin: 0; font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.contato-email { margin: 4px 0; font-size: 1.3rem; font-weight: 700; overflow-wrap: anywhere; }
