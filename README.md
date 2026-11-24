@@ -15,6 +15,8 @@ Site de resultados das loterias da CAIXA, conferidor de apostas, gerador de núm
 | `assets/js/modos.js` | Modos do gerador: Aleatório puro, Quentes, Frios e Equilibrado (testado) |
 | `assets/js/datas.js` | Calendário: próximas datas no horário de Brasília (testado) |
 | `scripts/app.mjs` | App: manifesto do PWA, service worker, assetlinks e "modo app" Android |
+| `conteudo/blog/` | Artigos do blog (um objeto por artigo: slug, título, descrição, categoria, data, HTML). Entram sozinhos em `/blog/` e no sitemap |
+| `scripts/blog.mjs` | Blog: dados estruturados (BlogPosting), datas e artigos relacionados |
 | `android/twa-manifest.json` | Configuração do pacote Android (TWA/Bubblewrap). Guia em `docs/ANDROID.md` |
 | `src/config.js` | **Configurações editáveis**: lotérica parceira, WhatsApp, AdSense, Analytics, app Android |
 

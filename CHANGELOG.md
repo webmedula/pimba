@@ -1,5 +1,17 @@
 # Changelog — Pimba
 
+## v1.6.0 — 2026-11-24
+Site mais completo para a revisão do AdSense: blog com conteúdo próprio, página de contato e páginas institucionais reforçadas.
+- **Blog** (`/blog/`) com 14 artigos originais: guia das 11 loterias, como jogar na Mega-Sena, Lotofácil, Quina e +Milionária, Mega da Virada, como calcular a probabilidade, apostar mais números vale a pena?, números quentes e frios funcionam?, como funciona o bolão da CAIXA, como conferir o jogo, como receber o prêmio, golpes da loteria e jogo responsável
+- Preços, chances e dias de sorteio nos artigos vêm de `assets/js/loterias.js`: quando a CAIXA reajustar, o texto atualiza junto. Nenhum artigo promete ganho (teste garante) e todos terminam com o aviso de jogo responsável
+- Cada artigo tem autor (Equipe Pimba), data, tempo de leitura, dados estruturados `BlogPosting`, links internos para resultados, conferidor, calendário e outros artigos, e "Leia também". Seção "Aprenda antes de jogar" na home e link "Blog" no menu e no rodapé
+- **Página de contato** (`/contato/`) com o e-mail `contato@pimba.com.br` (configurável em `src/config.js`). O e-mail também aparece em Sobre, Privacidade e Termos
+- **Sobre** reescrita: o que o site oferece, de onde vêm os resultados, princípios, quem escreve e como o site se mantém (AdSense e lotérica parceira). Dados estruturados `Organization`
+- **Termos de uso** completos: natureza informativa, resultados, ferramentas, idade mínima, anúncios, links externos, propriedade intelectual, responsabilidade e legislação
+- Rodapé: Sobre o Pimba, Contato, Blog, Jogo responsável, Privacidade e cookies, Termos de uso
+- **Sitemap** com 58 endereços e `lastmod` pela data de cada artigo. Conferido: robots.txt libera tudo menos `/api/`, e só a 404 e a página offline têm `noindex` (teste garante)
+- 10 testes novos (55 no total)
+
 ## v1.5.0 — 2026-11-22
 Gerador com modos: Aleatório puro, Quentes, Frios e Equilibrado, usando as estatísticas da v1.1.0.
 - **Quentes:** dá mais peso aos números que mais saíram nos últimos 10, 25, 50 ou 100 concursos (o usuário escolhe). **Frios:** mais peso aos que estão há mais tempo sem sair (no Super Sete, aos que menos saíram em cada coluna). Trevos da +Milionária e Mês de Sorte também seguem o modo

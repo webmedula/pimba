@@ -3,9 +3,11 @@
 export const SITE = {
   nome: 'Pimba',
   url: 'https://pimba.com.br',
-  versao: '1.5.0',
+  versao: '1.6.0',
   slogan: 'Resultados das loterias, conferidor e bolões — sem enrolação.',
-  email: '', // ex.: contato@pimba.com.br (deixe vazio para esconder)
+  // E-mail de contato (páginas Contato, Sobre, Privacidade e Termos). Precisa receber mensagens de verdade:
+  // no Cloudflare, Email > Email Routing, encaminhe contato@pimba.com.br para a sua caixa pessoal.
+  email: 'contato@pimba.com.br',
 
   // Lista de avisos no WhatsApp (link de grupo/comunidade ou wa.me). Vazio = botões escondidos.
   whatsappLista: '',

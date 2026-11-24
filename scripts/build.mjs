@@ -11,6 +11,8 @@ import { DIAS, DIAS_CURTOS, SEMANA, sorteiosDoDia } from '../assets/js/datas.js'
 import { blocoParceiro, ldParceiro, parceiroAtivo, zap } from './parceiro.mjs';
 import { adsTxt, adsenseAtivo, anuncio as anuncioDe, scriptAdsense } from './anuncios.mjs';
 import { manifesto, scriptModoApp, serviceWorker } from './app.mjs';
+import { dataLonga, ldArtigo, relacionados } from './blog.mjs';
+import { ARTIGOS, CATEGORIAS } from '../conteudo/blog/index.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = join(ROOT, 'dist');
@@ -28,11 +30,11 @@ if (existsSync(fonte)) {
 
 const paginas = []; // para o sitemap
 
-function salvar(rota, html, { sitemap = true, prioridade = '0.6' } = {}) {
+function salvar(rota, html, { sitemap = true, prioridade = '0.6', lastmod = '' } = {}) {
   const arq = rota === '/404' ? join(DIST, '404.html') : join(DIST, rota, 'index.html');
   mkdirSync(dirname(arq), { recursive: true });
   writeFileSync(arq, html);
-  if (sitemap) paginas.push({ rota, prioridade });
+  if (sitemap) paginas.push({ rota, prioridade, lastmod });
 }
 
 
@@ -45,6 +47,7 @@ const NAV = [
   ['/calendario/', 'Calendário'],
   ['/boloes/', 'Bolões'],
   ['/probabilidades/', 'Chances'],
+  ['/blog/', 'Blog'],
 ];
 
 const anuncio = (posicao) => anuncioDe(SITE, posicao);
@@ -127,7 +130,9 @@ ${ctaWhats()}
     <div>
       <h2>Pimba</h2>
       <ul>
-        <li><a href="/sobre/">Sobre e contato</a></li>
+        <li><a href="/sobre/">Sobre o Pimba</a></li>
+        <li><a href="/contato/">Contato</a></li>
+        <li><a href="/blog/">Blog</a></li>
         <li><a href="/jogo-responsavel/">Jogo responsável</a></li>
         <li><a href="/privacidade/">Privacidade e cookies</a></li>
         <li><a href="/termos/">Termos de uso</a></li>
@@ -162,6 +167,9 @@ const tabelaOdds = (l) =>
   `<table class="tabela"><thead><tr><th>Faixa</th><th>Chance (aposta mínima)</th></tr></thead><tbody>${l.odds
     .map(([f, o]) => `<tr><td>${esc(f)}</td><td>1 em ${fmtInt(o)}</td></tr>`)
     .join('')}</tbody></table>`;
+
+const cardArtigo = (a, h = 'h2') =>
+  `<a class="ferr card-blog" href="/blog/${a.slug}/"><span class="card-blog-cat">${esc(a.categoria)}</span><${h}>${esc(a.titulo)}</${h}><p>${esc(a.descricao)}</p><span class="card-blog-meta">${a.leitura} min de leitura</span></a>`;
 
 // ---------- HOME ----------
 const faqHome = [
@@ -226,6 +234,13 @@ ${blocoParceiro(SITE.parceiro, { variante: 'home' })}
 </section>
 
 ${anuncio('home-meio')}
+
+<section class="secao">
+  <div class="wrap">
+    <div class="secao-topo"><h2>Aprenda antes de jogar</h2><a href="/blog/">Todos os artigos →</a></div>
+    <div class="grid-blog">${ARTIGOS.filter((a) => ['como-jogar-na-mega-sena', 'probabilidade-na-loteria-como-calcular', 'como-funciona-o-bolao-da-caixa', 'golpes-da-loteria-como-se-proteger'].includes(a.slug)).map((a) => cardArtigo(a, 'h3')).join('')}</div>
+  </div>
+</section>
 
 <section class="secao">
   <div class="wrap faq">
@@ -653,20 +668,104 @@ for (const l of comCalendario) {
   }), { prioridade: '0.7' });
 }
 
-// ---------- PÁGINAS INSTITUCIONAIS ----------
-const pagTexto = (rota, titulo, descricao, h1, html) =>
+// ---------- BLOG ----------
+const ultimaData = ARTIGOS.map((a) => a.atualizado || a.data).sort().at(-1);
+salvar('/blog', layout({
+  titulo: 'Blog do Pimba: guias, chances e dicas sobre as loterias da CAIXA',
+  descricao: 'Artigos para jogar sabendo o que está fazendo: como jogar em cada loteria, como calcular as chances, como funciona o bolão, como receber o prêmio e como fugir de golpes.',
+  rota: '/blog/',
+  extraHead: `<script type="application/ld+json">${JSON.stringify({ '@context': 'https://schema.org', '@type': 'Blog', name: 'Blog do Pimba', url: `${SITE.url}/blog/`, inLanguage: 'pt-BR', blogPost: ARTIGOS.map((a) => ({ '@type': 'BlogPosting', headline: a.titulo, url: `${SITE.url}/blog/${a.slug}/`, datePublished: a.data })) })}</script>`,
+  corpo: `
+<section class="secao">
+  <div class="wrap">
+    ${migalhas([['Início', '/'], ['Blog', '/blog/']])}
+    <h1>Blog do Pimba</h1>
+    <p class="lead">Guias diretos e honestos sobre as loterias da CAIXA: como jogar, quanto custa, quais são as chances reais e como jogar com segurança. Sem promessa de prêmio.</p>
+    ${CATEGORIAS.map((cat) => {
+      const lista = ARTIGOS.filter((a) => a.categoria === cat);
+      return lista.length ? `<h2>${esc(cat)}</h2><div class="grid-blog">${lista.map((a) => cardArtigo(a, 'h3')).join('')}</div>` : '';
+    }).join('\n')}
+    ${anuncio('blog')}
+  </div>
+</section>`,
+}), { prioridade: '0.7', lastmod: ultimaData });
+
+for (const a of ARTIGOS) {
+  const rota = `/blog/${a.slug}/`;
+  const rel = relacionados(a, ARTIGOS);
   salvar(rota, layout({
-    titulo: `${titulo} | Pimba`, descricao, rota: `${rota}/`,
+    titulo: `${a.titulo} | Pimba`,
+    descricao: a.descricao,
+    rota,
+    ogTipo: 'article',
+    extraHead: `<meta property="article:published_time" content="${a.data}"><meta property="article:modified_time" content="${a.atualizado || a.data}"><meta property="article:section" content="${esc(a.categoria)}"><script type="application/ld+json">${JSON.stringify(ldArtigo(a, SITE))}</script>`,
+    corpo: `
+<article class="secao">
+  <div class="wrap estreito texto artigo">
+    ${migalhas([['Início', '/'], ['Blog', '/blog/'], [a.titulo, rota]])}
+    <p class="card-blog-cat">${esc(a.categoria)}</p>
+    <h1>${esc(a.titulo)}</h1>
+    <p class="artigo-meta">Por <a href="/sobre/">Equipe Pimba</a> · <time datetime="${a.data}">${dataLonga(a.data)}</time>${a.atualizado ? ` · atualizado em <time datetime="${a.atualizado}">${dataLonga(a.atualizado)}</time>` : ''} · ${a.leitura} min de leitura</p>
+    ${a.html}
+    <div class="aviso"><strong>Jogue com responsabilidade.</strong> Loteria é diversão, não investimento. Nenhum método aumenta a chance de ganhar, e apostas são proibidas para menores de 18 anos. O Pimba não é a CAIXA e não vende apostas. <a href="/jogo-responsavel/">Saiba mais</a>.</div>
+    ${anuncio('artigo')}
+    <section class="leia-tambem">
+      <h2>Leia também</h2>
+      <div class="grid-blog">${rel.map((b) => cardArtigo(b, 'h3')).join('')}</div>
+    </section>
+  </div>
+</article>`,
+  }), { prioridade: '0.6', lastmod: a.atualizado || a.data });
+}
+
+// ---------- PÁGINAS INSTITUCIONAIS ----------
+const pagTexto = (rota, titulo, descricao, h1, html, extraHead = '') =>
+  salvar(rota, layout({
+    titulo: `${titulo} | Pimba`, descricao, rota: `${rota}/`, extraHead,
     corpo: `<section class="secao"><div class="wrap estreito texto">${migalhas([['Início', '/'], [h1, `${rota}/`]])}<h1>${esc(h1)}</h1>${html}</div></section>`,
   }), { prioridade: '0.3' });
 
-pagTexto('/sobre', 'Sobre o Pimba', 'O Pimba é um site independente com resultados das loterias, conferidor e ferramentas grátis.', 'Sobre o Pimba', `
-<p>O Pimba nasceu para ser o jeito mais rápido de saber se você ganhou: resultado na tela, conferidor fácil e informação honesta sobre as chances de cada loteria.</p>
-<p>Somos um site <strong>independente</strong>. Não somos a CAIXA, não vendemos apostas e não temos vínculo com as Loterias CAIXA. Os resultados vêm das fontes oficiais e são exibidos minutos após cada sorteio.</p>
-<h2>Contato</h2>
-${SITE.email ? `<p>E-mail: <a href="mailto:${esc(SITE.email)}">${esc(SITE.email)}</a></p>` : ''}
+const emailLink = SITE.email ? `<a href="mailto:${esc(SITE.email)}">${esc(SITE.email)}</a>` : '';
+
+pagTexto('/sobre', 'Sobre o Pimba', 'Quem faz o Pimba, de onde vêm os resultados, como o site se mantém e os nossos princípios: informação honesta sobre as loterias da CAIXA, sem promessa de prêmio.', 'Sobre o Pimba', `
+<p>O Pimba (pimba.com.br) é um site brasileiro e independente sobre as loterias da CAIXA. Nasceu para ser o jeito mais rápido de saber se você ganhou: resultado na tela minutos depois do sorteio, conferidor fácil e informação honesta sobre as chances de cada loteria.</p>
+<h2>O que você encontra aqui</h2>
+<ul class="lista-check">
+  <li><strong><a href="/resultados/">Resultados</a></strong> das 11 loterias da CAIXA, com premiação por faixa, ganhadores e concursos anteriores.</li>
+  <li><strong>Ferramentas grátis:</strong> <a href="/conferidor/">conferidor de apostas</a>, <a href="/gerador/">gerador de números</a>, <a href="/estatisticas/">estatísticas</a>, <a href="/calendario/">calendário de sorteios</a> e <a href="/probabilidades/">chances de ganhar</a>.</li>
+  <li><strong><a href="/blog/">Blog</a></strong> com guias sobre como jogar em cada modalidade, probabilidade, bolões, como receber prêmios e como evitar golpes.</li>
+</ul>
+<h2>De onde vêm os resultados</h2>
+<p>Os resultados são obtidos automaticamente dos canais oficiais das Loterias CAIXA, logo após a divulgação de cada sorteio. As probabilidades são calculadas por combinatória e conferem com as publicadas pela CAIXA. Mesmo assim, erros e atrasos podem acontecer: <strong>o resultado que vale é sempre o oficial da CAIXA</strong>, conferido na lotérica ou no aplicativo Loterias CAIXA.</p>
+<h2>Nossos princípios</h2>
+<ul class="lista-check">
+  <li><strong>Sem promessa de prêmio.</strong> Nenhuma ferramenta, estatística ou método aumenta a chance de ganhar, e dizemos isso em todas as páginas em que o assunto aparece.</li>
+  <li><strong>Independência.</strong> O Pimba não é a CAIXA, não vende apostas nem cotas de bolão e não recebe dinheiro de apostas.</li>
+  <li><strong>Jogo responsável.</strong> Loteria é diversão para maiores de 18 anos. Veja a nossa página de <a href="/jogo-responsavel/">jogo responsável</a>.</li>
+  <li><strong>Correção rápida.</strong> Encontrou um erro num resultado ou num texto? Avise pela página de <a href="/contato/">contato</a> e corrigimos.</li>
+</ul>
+<h2>Quem escreve</h2>
+<p>Os textos do blog são escritos e revisados pela Equipe Pimba, com base nas regras oficiais publicadas pela CAIXA e em cálculos que qualquer pessoa pode refazer. Quando uma regra, preço ou calendário muda, atualizamos as páginas e indicamos a data da atualização.</p>
+<h2>Como o Pimba se mantém</h2>
+<p>O site é gratuito e se mantém com anúncios exibidos pelo Google AdSense. Os anúncios são identificados como "Publicidade" e não aparecem na página de bolões. Saiba como os anúncios usam cookies na <a href="/privacidade/">política de privacidade e cookies</a>.</p>
+<p>O Pimba também divulga os bolões oficiais de uma lotérica parceira credenciada pela CAIXA, a ${esc(SITE.parceiro?.nome || 'lotérica parceira')}. A compra das cotas acontece sempre no canal oficial da CAIXA ou na própria lotérica, com recibo oficial. Veja a página de <a href="/boloes/">bolões</a>.</p>
+<h2>Fale com a gente</h2>
+<p>Dúvidas, sugestões, correções ou parcerias: ${emailLink ? `escreva para ${emailLink} ou ` : ''}veja a página de <a href="/contato/">contato</a>.</p>`,
+`<script type="application/ld+json">${JSON.stringify({ '@context': 'https://schema.org', '@type': 'Organization', name: 'Pimba', url: SITE.url, logo: `${SITE.url}/assets/img/app/icon-512.png`, ...(SITE.email ? { email: SITE.email } : {}) })}</script>`);
+
+pagTexto('/contato', 'Contato', 'Fale com o Pimba: correções de resultados, dúvidas sobre o site, privacidade, anúncios e parcerias.', 'Fale com o Pimba', `
+<p>Quer avisar sobre um erro, tirar uma dúvida sobre o site ou propor uma parceria? Fale com a gente.</p>
+${emailLink ? `<div class="contato-box"><p class="contato-rotulo">E-mail</p><p class="contato-email">${emailLink}</p><p class="muted small">Respondemos em até 2 dias úteis.</p></div>` : ''}
 ${parceiroAtivo(SITE.parceiro) && SITE.parceiro.whatsapp ? `<p data-fora-do-app>WhatsApp: <a href="${zap(SITE.parceiro.whatsapp, 'Olá! Vim pelo site do Pimba.')}" target="_blank" rel="noopener">fale com a gente</a></p>` : ''}
-<p>Encontrou um erro em algum resultado? Avise — corrigimos na hora.</p>`);
+<h2>Para agilizar</h2>
+<ul class="lista-check">
+  <li><strong>Erro em resultado:</strong> diga a loteria, o número do concurso e o que está diferente do resultado oficial.</li>
+  <li><strong>Privacidade e dados pessoais (LGPD):</strong> diga qual direito quer exercer (acesso, correção, exclusão etc.). Veja a <a href="/privacidade/">política de privacidade</a>.</li>
+  <li><strong>Anúncios:</strong> se algum anúncio parecer impróprio, conte em que página ele apareceu e o que ele mostrava.</li>
+</ul>
+<h2>O que não fazemos</h2>
+<p>O Pimba não é a CAIXA e não tem acesso a apostas, bilhetes ou prêmios. Não vendemos apostas nem cotas de bolão e <strong>nunca entramos em contato pedindo pagamento, senha ou dados bancários</strong>. Para prêmios, apostas feitas no aplicativo ou problemas com bilhetes, procure uma lotérica ou o atendimento oficial das Loterias CAIXA.</p>
+<p>Para bolões, fale direto com a lotérica parceira pelos contatos da página <a href="/boloes/">bolões</a>.</p>`);
 
 pagTexto('/jogo-responsavel', 'Jogo responsável', 'Loteria é diversão. Veja como jogar com responsabilidade e onde buscar ajuda.', 'Jogo responsável', `
 <p>Loteria é entretenimento, não investimento nem fonte de renda. As chances de ganhar o prêmio principal são muito pequenas — na Mega-Sena, 1 em 50 milhões por aposta simples.</p>
@@ -679,10 +778,10 @@ pagTexto('/jogo-responsavel', 'Jogo responsável', 'Loteria é diversão. Veja c
 </ul>`);
 
 const contatoPriv = SITE.email
-  ? `pelo e-mail <a href="mailto:${esc(SITE.email)}">${esc(SITE.email)}</a> ou pelos canais da página <a href="/sobre/">Sobre e contato</a>`
-  : 'pelos canais da página <a href="/sobre/">Sobre e contato</a>';
+  ? `pelo e-mail <a href="mailto:${esc(SITE.email)}">${esc(SITE.email)}</a> ou pela página de <a href="/contato/">contato</a>`
+  : 'pela página de <a href="/contato/">contato</a>';
 pagTexto('/privacidade', 'Política de privacidade e cookies', 'Como o Pimba trata seus dados e usa cookies (Google AdSense e Analytics), conforme a LGPD.', 'Política de privacidade e cookies', `
-<p>Última atualização: 15/11/2026 (versão ${V}).</p>
+<p>Última atualização: 24/11/2026 (versão ${V}).</p>
 <p>Esta política explica quais dados o Pimba (pimba.com.br) trata, para quê e quais são os seus direitos, conforme a Lei Geral de Proteção de Dados (Lei 13.709/2018, LGPD).</p>
 <h2>Quem é o responsável</h2>
 <p>O controlador dos dados é o Pimba, site independente de informação sobre loterias. Fale com a gente sobre privacidade ${contatoPriv}.</p>
@@ -725,15 +824,42 @@ pagTexto('/privacidade', 'Política de privacidade e cookies', 'Como o Pimba tra
 <h2>Mudanças nesta política</h2>
 <p>Quando esta política mudar, atualizamos a data no topo da página.</p>`);
 
-pagTexto('/termos', 'Termos de uso', 'Termos de uso do site Pimba.', 'Termos de uso', `
-<p>Ao usar o Pimba você concorda com estes termos.</p>
+pagTexto('/termos', 'Termos de uso', 'Termos de uso do Pimba: natureza informativa do site, resultados, ferramentas, anúncios, links externos, propriedade intelectual e responsabilidades.', 'Termos de uso', `
+<p>Última atualização: 24/11/2026.</p>
+<p>Estes termos valem para o uso do site pimba.com.br e do aplicativo Pimba. Ao usar o Pimba você concorda com eles. Se não concordar, por favor não use o site.</p>
+<h2>1. O que é o Pimba</h2>
+<p>O Pimba é um site independente de informação sobre as loterias da CAIXA. <strong>Não é a CAIXA, não vende apostas, não intermedeia jogos e não recebe valores de apostas.</strong> Apostas e cotas de bolão oficiais são vendidas somente nas lotéricas credenciadas e nos canais oficiais da CAIXA.</p>
+<h2>2. Resultados e informações</h2>
 <ul class="lista-check">
-  <li>O Pimba é informativo. Os resultados são obtidos de fontes oficiais, mas podem conter atrasos ou erros: <strong>o resultado válido é sempre o oficial da CAIXA</strong>.</li>
-  <li>O Pimba não vende apostas, não intermedeia jogos e não recebe valores de apostas.</li>
-  <li>O gerador de números é aleatório e não aumenta chances de ganhar.</li>
-  <li>Marcas e nomes das loterias pertencem aos seus titulares e são citados apenas para identificação.</li>
-  <li>Conteúdo para maiores de 18 anos.</li>
-</ul>`);
+  <li>Os resultados são obtidos de fontes oficiais e exibidos de forma automática, mas podem conter atrasos ou erros. <strong>O resultado válido é sempre o oficial da CAIXA.</strong> Confira na lotérica ou no aplicativo Loterias CAIXA antes de descartar qualquer bilhete.</li>
+  <li>Preços, regras, dias de sorteio e probabilidades são informados de boa-fé e atualizados quando a CAIXA os altera, mas a referência é sempre o regulamento oficial.</li>
+  <li>Os textos do blog são informativos e não são aconselhamento financeiro, jurídico ou tributário.</li>
+</ul>
+<h2>3. Ferramentas</h2>
+<ul class="lista-check">
+  <li>O conferidor é uma ajuda e não substitui a conferência oficial.</li>
+  <li>O gerador de números e as estatísticas são recursos de entretenimento. <strong>Nenhum deles aumenta a chance de ganhar</strong>: em cada sorteio, todas as combinações têm a mesma probabilidade.</li>
+  <li>Os números que você digita nas ferramentas ficam no seu navegador.</li>
+</ul>
+<h2>4. Idade mínima</h2>
+<p>Apostas em loterias são proibidas para menores de 18 anos. O conteúdo do Pimba é destinado a maiores de idade.</p>
+<h2>5. Anúncios e links externos</h2>
+<ul class="lista-check">
+  <li>O site exibe anúncios do Google AdSense, identificados como "Publicidade". Os anunciantes são responsáveis pelos seus anúncios e ofertas; o Pimba não endossa produtos anunciados.</li>
+  <li>O Pimba tem links para sites de terceiros, como o portal da CAIXA e a lotérica parceira. Não controlamos esses sites e não respondemos pelo conteúdo, pelas políticas ou pelas transações feitas neles.</li>
+</ul>
+<h2>6. Propriedade intelectual</h2>
+<p>Os textos, o código, o visual e a marca Pimba pertencem ao Pimba. Você pode compartilhar links e citar pequenos trechos com a indicação da fonte, mas não pode copiar o site ou partes substanciais dele sem autorização. Os nomes e marcas das loterias pertencem aos seus titulares e são citados apenas para identificação.</p>
+<h2>7. Uso adequado</h2>
+<p>Não é permitido usar o Pimba para atividades ilegais, tentar sobrecarregar ou invadir o site, ou coletar o conteúdo de forma automatizada em volume que prejudique o serviço.</p>
+<h2>8. Responsabilidade</h2>
+<p>O Pimba é oferecido gratuitamente, "como está". Não nos responsabilizamos por decisões tomadas com base nas informações do site, por apostas, por perdas ou por prêmios não recebidos. A conferência oficial e a guarda do bilhete são responsabilidade do apostador.</p>
+<h2>9. Privacidade</h2>
+<p>O tratamento de dados pessoais e o uso de cookies estão descritos na <a href="/privacidade/">política de privacidade e cookies</a>.</p>
+<h2>10. Mudanças e legislação</h2>
+<p>Estes termos podem ser atualizados, e a data no topo da página indica a versão em vigor. Eles são regidos pelas leis da República Federativa do Brasil.</p>
+<h2>11. Contato</h2>
+<p>Dúvidas sobre estes termos: ${emailLink || 'veja a página de <a href="/contato/">contato</a>'}.</p>`);
 
 // ---------- 404 ----------
 salvar('/404', layout({
@@ -751,7 +877,7 @@ salvar('/offline', layout({
 const hoje = new Date().toISOString().slice(0, 10);
 writeFileSync(join(DIST, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${paginas.map((pg) => `  <url><loc>${SITE.url}${pg.rota === '/' ? '/' : `${pg.rota.replace(/\/$/, '')}/`}</loc><lastmod>${hoje}</lastmod><priority>${pg.prioridade}</priority></url>`).join('\n')}
+${paginas.map((pg) => `  <url><loc>${SITE.url}${pg.rota === '/' ? '/' : `${pg.rota.replace(/\/$/, '')}/`}</loc><lastmod>${pg.lastmod || hoje}</lastmod><priority>${pg.prioridade}</priority></url>`).join('\n')}
 </urlset>
 `);
 
@@ -794,6 +920,8 @@ writeFileSync(join(DIST, '_redirects'), `/shop / 301
 /calendario /calendario/ 301
 /conferidor /conferidor/ 301
 /gerador /gerador/ 301
+/blog /blog/ 301
+/contato /contato/ 301
 `);
 
 writeFileSync(join(DIST, '_headers'), `/*
