@@ -1,4 +1,4 @@
-// Pimba v1.6.1 — interface do conferidor
+// Pimba v1.6.2 — interface do conferidor
 import { POR_SLUG } from './loterias.js';
 import { bolas, brl, esc, extraDe, fmtInt } from './render.js';
 import { conferir } from './conferir.js';

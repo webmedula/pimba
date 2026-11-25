@@ -11,6 +11,7 @@ import { DIAS, DIAS_CURTOS, SEMANA, sorteiosDoDia } from '../assets/js/datas.js'
 import { blocoParceiro, ldParceiro, parceiroAtivo, zap } from './parceiro.mjs';
 import { adsTxt, adsenseAtivo, anuncio as anuncioDe, scriptAdsense } from './anuncios.mjs';
 import { manifesto, scriptModoApp, serviceWorker } from './app.mjs';
+import { versionarImports } from './versionar.mjs';
 import { dataLonga, ldArtigo, relacionados } from './blog.mjs';
 import { ARTIGOS, CATEGORIAS } from '../conteudo/blog/index.mjs';
 
@@ -22,6 +23,7 @@ const ANO = new Date().getFullYear();
 rmSync(DIST, { recursive: true, force: true });
 mkdirSync(DIST, { recursive: true });
 cpSync(join(ROOT, 'assets'), join(DIST, 'assets'), { recursive: true });
+versionarImports(join(DIST, 'assets/js'), V);
 const fonte = join(ROOT, 'node_modules/@fontsource-variable/outfit/files/outfit-latin-wght-normal.woff2');
 if (existsSync(fonte)) {
   mkdirSync(join(DIST, 'assets/fonts'), { recursive: true });
