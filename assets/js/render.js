@@ -1,4 +1,4 @@
-// Pimba v1.0.0 — normalização dos dados da Caixa e renderização (usado no Worker e no navegador)
+// Pimba v1.6.1 — normalização dos dados da Caixa e renderização (usado no Worker e no navegador)
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 export { esc };
@@ -14,6 +14,13 @@ export const brlCurto = (v) => {
   if (v >= 1e3) return `R$ ${(v / 1e3).toLocaleString('pt-BR', { maximumFractionDigits: 0 })} mil`;
   return brl(v);
 };
+
+/**
+ * Time do Coração (Timemania) ou Mês de Sorte (Dia de Sorte). A CAIXA manda esse campo em todas as loterias,
+ * e nas outras ele vem preenchido com caracteres invisíveis (\u0000), o que fazia aparecer um "Time:" vazio.
+ */
+export const limparExtra = (s) => String(s ?? '').replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200d\ufeff]/g, '').trim();
+export const extraDe = (r, lot) => (lot?.extra && r ? limparExtra(r.timeMes) : '');
 
 export const fmtInt = (n) => (typeof n === 'number' ? n.toLocaleString('pt-BR') : '—');
 
@@ -43,7 +50,7 @@ export function normalizar(raw, lot) {
     ordem: raw.dezenasSorteadasOrdemSorteio || [],
     dezenas2: raw.listaDezenasSegundoSorteio || [],
     trevos: raw.trevosSorteados || [],
-    timeMes: (raw.nomeTimeCoracaoMesSorte || '').trim(),
+    timeMes: lot.extra ? limparExtra(raw.nomeTimeCoracaoMesSorte) : '',
     acumulado: !!raw.acumulado,
     premios,
     jogos,
@@ -80,7 +87,7 @@ export function bolas(lista, lot, cls = '') {
 /** Bloco compacto (cards da home e lista de resultados). */
 export function renderCard(r, lot) {
   if (!r) {
-    return `<article class="card-res" style="--cor:${lot.cor}"><header><h3><a href="/resultados/${lot.slug}/">${esc(lot.nome)}</a></h3></header><p class="muted">Resultado indisponível agora. <a href="/resultados/${lot.slug}/">Tentar de novo</a></p></article>`;
+    return `<article class="card-res" style="--cor:${lot.cor}"><header><h3><a href="/resultados/${lot.slug}/">${esc(lot.nome)}</a></h3></header><p class="muted">Resultado indisponível agora. <a href="/resultados/${lot.slug}/" data-tentar="${lot.slug}">Tentar de novo</a></p></article>`;
   }
   let corpo = '';
   if (lot.tipo === 'loteca') {
@@ -90,7 +97,7 @@ export function renderCard(r, lot) {
   } else {
     corpo = bolas(r.dezenas, lot, 'mini');
     if (r.trevos.length) corpo += `<p class="extra">Trevos: ${r.trevos.map(esc).join(' e ')}</p>`;
-    if (r.timeMes) corpo += `<p class="extra">${lot.extra === 'mes' ? 'Mês' : 'Time'}: ${esc(r.timeMes)}</p>`;
+    if (extraDe(r, lot)) corpo += `<p class="extra">${lot.extra === 'mes' ? 'Mês' : 'Time'}: ${esc(extraDe(r, lot))}</p>`;
   }
   const status = r.acumulado
     ? `<span class="tag tag-acum">Acumulou!</span>`
@@ -122,7 +129,7 @@ export function renderResultado(r, lot) {
     sorteio = `<h2 class="h-sorteio">${r.dezenas2.length ? '1º sorteio' : 'Números sorteados'}</h2>${bolas(r.dezenas, lot, 'grandes')}`;
     if (r.dezenas2.length) sorteio += `<h2 class="h-sorteio">2º sorteio</h2>${bolas(r.dezenas2, lot, 'grandes')}`;
     if (r.trevos.length) sorteio += `<h2 class="h-sorteio">Trevos</h2>${bolas(r.trevos, lot, 'grandes trevos')}`;
-    if (r.timeMes) sorteio += `<p class="extra-grande">${lot.extra === 'mes' ? 'Mês de Sorte' : 'Time do Coração'}: <strong>${esc(r.timeMes)}</strong></p>`;
+    if (extraDe(r, lot)) sorteio += `<p class="extra-grande">${lot.extra === 'mes' ? 'Mês de Sorte' : 'Time do Coração'}: <strong>${esc(extraDe(r, lot))}</strong></p>`;
     if (r.ordem.length && lot.tipo === 'dezenas' && !lot.duplo) {
       sorteio += `<p class="muted small">Ordem do sorteio: ${r.ordem.map((d) => esc(pad(d, lot))).join(' · ')}</p>`;
     }

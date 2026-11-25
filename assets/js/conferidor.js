@@ -1,6 +1,6 @@
-// Pimba v1.0.0 — interface do conferidor
+// Pimba v1.6.1 — interface do conferidor
 import { POR_SLUG } from './loterias.js';
-import { bolas, brl, esc, fmtInt } from './render.js';
+import { bolas, brl, esc, extraDe, fmtInt } from './render.js';
 import { conferir } from './conferir.js';
 
 const $ = (id) => document.getElementById(id);
@@ -143,7 +143,7 @@ async function executar() {
     veredito = '<p>Dessa vez não deu. Fica para o próximo!</p>';
   }
 
-  const extra = res.timeMes ? `<p class="muted">${lot.extra === 'mes' ? 'Mês de Sorte' : 'Time do Coração'} sorteado: <strong>${esc(res.timeMes)}</strong> — confira no seu bilhete.</p>` : '';
+  const extra = extraDe(res, lot) ? `<p class="muted">${lot.extra === 'mes' ? 'Mês de Sorte' : 'Time do Coração'} sorteado: <strong>${esc(extraDe(res, lot))}</strong> — confira no seu bilhete.</p>` : '';
 
   saida.innerHTML = `<div class="conf-res" style="--cor:${lot.cor}">
   <p class="muted">${esc(lot.nome)} · concurso ${fmtInt(res.concurso)} · ${esc(res.data)}</p>
