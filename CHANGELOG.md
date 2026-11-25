@@ -1,5 +1,14 @@
 # Changelog — Pimba
 
+## v1.6.1 — 2026-11-25
+Correção: na página inicial alguns cards ficavam com "Resultado indisponível agora" (ou com o resultado anterior), enquanto a página de cada loteria já mostrava o concurso novo. E um "Time:" vazio aparecia em loterias que não têm time.
+- **Causa:** a home pedia as 11 loterias à CAIXA de uma vez só. A CAIXA costuma recusar rajadas assim, e cada loteria que falhava virava "indisponível". A resposta incompleta ainda ficava 2 minutos guardada no navegador. A página de cada loteria faz um pedido só, por isso funcionava
+- **Worker:** no máximo 4 pedidos simultâneos à CAIXA, com 1 nova tentativa quando um falha. O último concurso de cada loteria fica guardado por 7 dias com a hora em que foi salvo: até 5 minutos sai direto do cache; depois disso busca na CAIXA e, se ela falhar, entrega a última cópia boa (marcada `desatualizado`) em vez de "indisponível". Nunca volta para um concurso anterior
+- Resposta incompleta ou com cópia antiga não fica guardada no navegador (`no-store`); a completa fica só 60 s (era 120 s)
+- **Home:** cada loteria que veio faltando (ou desatualizada) é buscada sozinha em `/api/resultado/<loteria>`, o mesmo endereço da página da loteria, com 2 tentativas. "Tentar de novo" busca ali mesmo, sem sair da página. Quem volta para a aba depois de 5 minutos vê os resultados atualizados sem recarregar
+- **"Time:" vazio:** a CAIXA manda o campo do Time do Coração/Mês de Sorte em todas as loterias, preenchido com caracteres invisíveis nas que não usam. Agora esses caracteres são removidos e o campo só aparece na Timemania e no Dia de Sorte (cards, página de resultado e conferidor), inclusive para dados que já estavam no cache
+- 6 testes novos (61 no total), incluindo o Worker rodando com a CAIXA fora do ar
+
 ## v1.6.0 — 2026-11-24
 Site mais completo para a revisão do AdSense: blog com conteúdo próprio, página de contato e páginas institucionais reforçadas.
 - **Blog** (`/blog/`) com 14 artigos originais: guia das 11 loterias, como jogar na Mega-Sena, Lotofácil, Quina e +Milionária, Mega da Virada, como calcular a probabilidade, apostar mais números vale a pena?, números quentes e frios funcionam?, como funciona o bolão da CAIXA, como conferir o jogo, como receber o prêmio, golpes da loteria e jogo responsável

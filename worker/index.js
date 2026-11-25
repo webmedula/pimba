@@ -1,4 +1,4 @@
-// Pimba v1.5.0 — Cloudflare Worker
+// Pimba v1.6.1 — Cloudflare Worker
 // - /.well-known/assetlinks.json → liga o app Android (TWA) ao site, a partir de SITE.app.sha256
 // - Serve os arquivos estáticos de dist/ (binding ASSETS)
 // - /api/resultado/:slug[/:concurso] e /api/resultados → proxy da API da Caixa, normalizado e com cache
@@ -43,19 +43,72 @@ async function baixarCaixa(lot, concurso, env) {
   return raw;
 }
 
-async function buscarCaixa(lot, concurso, env, ctx) {
+// Último concurso: uma entrada de cache por loteria, guardada por TTL_RESERVA, com a hora em que foi salva.
+// - até TTL_ULTIMO: devolve direto do cache;
+// - depois disso: busca na Caixa (com 1 nova tentativa); se a Caixa falhar, devolve a última cópia boa
+//   marcada com `desatualizado: true`, em vez de "Resultado indisponível".
+// Custo: no máximo 1 match + 2 fetch + 1 put por loteria (44 subrequests para as 11, abaixo do limite de 50).
+const TTL_RESERVA = 60 * 60 * 24 * 7;
+const ESPERA_RETENTATIVA = 400;
+const esperar = (ms) => new Promise((ok) => setTimeout(ok, ms));
+
+async function baixarComRetentativa(lot, concurso, env) {
+  try {
+    return await baixarCaixa(lot, concurso, env);
+  } catch {
+    await esperar(ESPERA_RETENTATIVA);
+    return baixarCaixa(lot, concurso, env);
+  }
+}
+
+async function buscarUltimo(lot, env, ctx) {
   const cache = caches.default;
-  const chave = new Request(`https://cache.pimba/${lot.api}/${concurso || 'ultimo'}`);
+  const chave = new Request(`https://cache.pimba/v2/${lot.api}/ultimo`);
+  const emCache = await cache.match(chave).catch(() => null);
+  const salvo = emCache ? await emCache.json().catch(() => null) : null;
+  if (salvo?.dados && Date.now() - salvo.em < TTL_ULTIMO * 1000) return salvo.dados;
+
+  try {
+    const dados = normalizar(await baixarComRetentativa(lot, null, env), lot);
+    // Nunca volta para um concurso anterior (a Caixa às vezes responde com o penúltimo logo após o sorteio).
+    if (salvo?.dados && salvo.dados.concurso > dados.concurso) return salvo.dados;
+    const corpo = JSON.stringify({ em: Date.now(), dados });
+    ctx.waitUntil(cache.put(chave, new Response(corpo, { headers: { 'Cache-Control': `public, max-age=${TTL_RESERVA}` } })).catch(() => {}));
+    return dados;
+  } catch (e) {
+    if (salvo?.dados) return { ...salvo.dados, desatualizado: true };
+    throw e;
+  }
+}
+
+async function buscarCaixa(lot, concurso, env, ctx) {
+  if (!concurso) return buscarUltimo(lot, env, ctx);
+  const cache = caches.default;
+  const chave = new Request(`https://cache.pimba/${lot.api}/${concurso}`);
   const emCache = await cache.match(chave);
   if (emCache) return emCache.json();
 
   const raw = await baixarCaixa(lot, concurso, env);
   const dados = normalizar(raw, lot);
-  const ttl = concurso && !raw.ultimoConcurso ? TTL_ANTIGO : TTL_ULTIMO;
+  const ttl = !raw.ultimoConcurso ? TTL_ANTIGO : TTL_ULTIMO;
   ctx.waitUntil(
     cache.put(chave, new Response(JSON.stringify(dados), { headers: { 'Cache-Control': `public, max-age=${ttl}` } })),
   );
   return dados;
+}
+
+// Roda as tarefas com no máximo `limite` ao mesmo tempo: a Caixa costuma recusar rajadas de 11 pedidos simultâneos.
+async function emLotes(itens, limite, fn) {
+  const saida = new Array(itens.length);
+  let proximo = 0;
+  const trabalhador = async () => {
+    while (proximo < itens.length) {
+      const i = proximo++;
+      saida[i] = await fn(itens[i], i);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limite, itens.length) }, trabalhador));
+  return saida;
 }
 
 // ---------- estatísticas ----------
@@ -103,7 +156,7 @@ const json = (obj, status = 200, maxAge = 120) =>
     status,
     headers: {
       'Content-Type': 'application/json; charset=utf-8',
-      'Cache-Control': status === 200 ? `public, max-age=${maxAge}` : 'no-store',
+      'Cache-Control': status === 200 && maxAge > 0 ? `public, max-age=${maxAge}` : 'no-store',
       'Access-Control-Allow-Origin': '*',
     },
   });
@@ -111,10 +164,10 @@ const json = (obj, status = 200, maxAge = 120) =>
 async function api(url, env, ctx) {
   const partes = url.pathname.split('/').filter(Boolean); // ['api', 'resultado', slug, n]
   if (partes[1] === 'resultados') {
-    const todos = await Promise.all(
-      LOTERIAS.map((l) => buscarCaixa(l, null, env, ctx).catch(() => null)),
-    );
-    return json(Object.fromEntries(LOTERIAS.map((l, i) => [l.slug, todos[i]])));
+    const todos = await emLotes(LOTERIAS, 4, (l) => buscarCaixa(l, null, env, ctx).catch(() => null));
+    // Resposta incompleta ou com cópia antiga: o navegador não guarda, para tentar de novo logo.
+    const completo = todos.every((d) => d && !d.desatualizado);
+    return json(Object.fromEntries(LOTERIAS.map((l, i) => [l.slug, todos[i]])), 200, completo ? 60 : 0);
   }
   if (partes[1] === 'resultado') {
     const lot = POR_SLUG[partes[2]];
@@ -123,7 +176,7 @@ async function api(url, env, ctx) {
     if (partes[3] && !(n > 0)) return json({ erro: 'Concurso inválido' }, 400);
     try {
       const d = await buscarCaixa(lot, n, env, ctx);
-      return json(d, 200, n && !d.ultimo ? 86400 : 120);
+      return json(d, 200, n && !d.ultimo ? 86400 : d.desatualizado ? 0 : 60);
     } catch (e) {
       return json({ erro: 'Não foi possível consultar a Caixa agora.', detalhe: String(e.message || e) }, 502);
     }
@@ -213,7 +266,7 @@ async function paginaResultado(req, url, env, ctx) {
     .transform(template);
 
   const headers = new Headers(resp.headers);
-  headers.set('Cache-Control', n && !dados.ultimo ? 'public, max-age=86400' : 'public, max-age=120');
+  headers.set('Cache-Control', n && !dados.ultimo ? 'public, max-age=86400' : dados.desatualizado ? 'no-store' : 'public, max-age=60');
   return new Response(resp.body, { status: 200, headers });
 }
 

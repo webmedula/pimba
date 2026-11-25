@@ -21,7 +21,7 @@
     "path": "./pimba-upload.keystore",
     "alias": "pimba"
   },
-  "appVersionName": "1.6.0",
+  "appVersionName": "1.6.1",
   "appVersionCode": 1,
   "shortcuts": [
     { "name": "Resultados", "shortName": "Resultados", "url": "https://pimba.com.br/resultados/", "chosenIconUrl": "https://pimba.com.br/assets/img/app/icon-192.png" },
@@ -42,5 +42,5 @@
   "fingerprints": [],
   "additionalTrustedOrigins": [],
   "retainedBundles": [],
-  "appVersion": "1.6.0"
+  "appVersion": "1.6.1"
 }
