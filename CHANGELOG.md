@@ -1,5 +1,12 @@
 # Changelog — Pimba
 
+## v1.6.2 — 2026-11-25
+Correção: o conferidor travava logo depois da atualização v1.6.1. A grade de números não aparecia, o contador ficava vazio e o botão "Conferir" não fazia nada.
+- **Causa:** a página carrega o `conferidor.js` com a versão no endereço (`?v=1.6.1`), mas ele importa o `render.js`, o `loterias.js` e o `conferir.js` sem versão. Quem tinha aberto o site na última hora ainda tinha o `render.js` antigo guardado no navegador (cache de 1 hora). O `conferidor.js` novo pedia uma função que só existe no `render.js` novo (`extraDe`, do conserto do "Time:" vazio) e o navegador desistia do script inteiro. O Worker e a CAIXA não tinham culpa: a falha era antes de qualquer consulta
+- **Conserto:** o build agora põe `?v=<versão>` em todos os imports entre os scripts do site (`scripts/versionar.mjs`). A cada versão nova, o navegador baixa o conjunto inteiro e nunca mistura arquivo novo com antigo. Vale também para gerador, estatísticas, calendário, resultados e home, que tinham o mesmo risco
+- Quem estava com o conferidor travado volta a ver a grade assim que esta versão subir, sem limpar nada
+- 2 testes novos (63 no total)
+
 ## v1.6.1 — 2026-11-25
 Correção: na página inicial alguns cards ficavam com "Resultado indisponível agora" (ou com o resultado anterior), enquanto a página de cada loteria já mostrava o concurso novo. E um "Time:" vazio aparecia em loterias que não têm time.
 - **Causa:** a home pedia as 11 loterias à CAIXA de uma vez só. A CAIXA costuma recusar rajadas assim, e cada loteria que falhava virava "indisponível". A resposta incompleta ainda ficava 2 minutos guardada no navegador. A página de cada loteria faz um pedido só, por isso funcionava

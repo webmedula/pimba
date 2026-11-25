@@ -3,7 +3,7 @@
 export const SITE = {
   nome: 'Pimba',
   url: 'https://pimba.com.br',
-  versao: '1.6.1',
+  versao: '1.6.2',
   slogan: 'Resultados das loterias, conferidor e bolões — sem enrolação.',
   // E-mail de contato (páginas Contato, Sobre, Privacidade e Termos). Precisa receber mensagens de verdade:
   // no Cloudflare, Email > Email Routing, encaminhe contato@pimba.com.br para a sua caixa pessoal.
