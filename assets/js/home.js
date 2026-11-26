@@ -1,4 +1,4 @@
-// Pimba v1.6.1 — home e índice de resultados: carrega o último concurso de todas as loterias.
+// Pimba v1.6.3 — home e índice de resultados: carrega o último concurso de todas as loterias.
 // Se /api/resultados vier sem alguma loteria (a CAIXA falhou naquele momento), cada card que faltou é
 // buscado sozinho em /api/resultado/<loteria>, o mesmo endereço que a página de cada loteria usa.
 import { LOTERIAS, POR_SLUG } from './loterias.js';
@@ -97,7 +97,8 @@ grid?.addEventListener('click', async (e) => {
     desenharCard(slug);
     desenharDestaque();
   } else {
-    location.href = link.href;
+    // v1.6.3: antes ia para a página da loteria, que também dependia da CAIXA e falhava igual.
+    link.textContent = 'Ainda sem resposta. Tentar de novo';
   }
 });
 

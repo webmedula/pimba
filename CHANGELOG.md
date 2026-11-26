@@ -1,5 +1,14 @@
 # Changelog — Pimba
 
+## v1.6.3 — 2026-11-26
+Correção: na página inicial só a Super Sete ficava com "Resultado indisponível agora", mesmo depois de "Tentar de novo".
+- **Causa:** a API da CAIXA parou de responder só para a Super Sete (o endereço `/supersete` e até concursos antigos, como `/supersete/700`, dão erro), enquanto Mega-Sena, Quina e as outras respondem normalmente. O site não tinha outra cópia guardada da Super Sete naquele servidor, então o card ficava vazio. O "Tentar de novo" ainda mandava para a página da Super Sete, que depende da mesma API e falhava igual
+- **Worker:** todo pedido à CAIXA agora desiste em 8 segundos, para uma loteria travada não segurar a fila das outras. A última cópia boa de cada loteria fica guardada 30 dias (eram 7). Se a CAIXA falhar e não houver cópia, o site usa o concurso mais novo do histórico das estatísticas (números, concurso e data), marcado como não confirmado
+- **Cards e página do resultado:** quando o resultado vem de cópia guardada, aparece o aviso "A CAIXA não está respondendo agora: este é o último resultado que conseguimos buscar e pode já haver um concurso mais novo". Sem premiação guardada, a página diz isso e manda para o site oficial
+- **Sem nenhum dado:** o card diz "A CAIXA não está respondendo para a Super Sete agora", com "Tentar de novo" e link para o site da CAIXA. O "Tentar de novo" que falha fica na home ("Ainda sem resposta. Tentar de novo") em vez de abrir uma página que também falharia
+- Assim que a CAIXA voltar a responder para a Super Sete, o card volta sozinho, sem nova versão
+- 6 testes novos (69 no total)
+
 ## v1.6.2 — 2026-11-25
 Correção: o conferidor travava logo depois da atualização v1.6.1. A grade de números não aparecia, o contador ficava vazio e o botão "Conferir" não fazia nada.
 - **Causa:** a página carrega o `conferidor.js` com a versão no endereço (`?v=1.6.1`), mas ele importa o `render.js`, o `loterias.js` e o `conferir.js` sem versão. Quem tinha aberto o site na última hora ainda tinha o `render.js` antigo guardado no navegador (cache de 1 hora). O `conferidor.js` novo pedia uma função que só existe no `render.js` novo (`extraDe`, do conserto do "Time:" vazio) e o navegador desistia do script inteiro. O Worker e a CAIXA não tinham culpa: a falha era antes de qualquer consulta

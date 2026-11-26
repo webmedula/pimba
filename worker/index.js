@@ -1,4 +1,4 @@
-// Pimba v1.6.1 — Cloudflare Worker
+// Pimba v1.6.3 — Cloudflare Worker
 // - /.well-known/assetlinks.json → liga o app Android (TWA) ao site, a partir de SITE.app.sha256
 // - Serve os arquivos estáticos de dist/ (binding ASSETS)
 // - /api/resultado/:slug[/:concurso] e /api/resultados → proxy da API da Caixa, normalizado e com cache
@@ -10,11 +10,14 @@ import { LOTERIAS, POR_SLUG } from '../assets/js/loterias.js';
 import { normalizar, renderResultado, seo } from '../assets/js/render.js';
 import { SITE } from '../src/config.js';
 import { assetLinks } from '../scripts/app.mjs';
-import { JANELA_MAX, JANELA_PADRAO, compactar, calcularEstatisticas, janelaValida, renderEstatisticas, temEstatistica } from '../assets/js/stats.js';
+import { JANELA_MAX, JANELA_PADRAO, compactar, expandir, calcularEstatisticas, janelaValida, renderEstatisticas, temEstatistica } from '../assets/js/stats.js';
 
 const CAIXA_BASE = 'https://servicebus2.caixa.gov.br/portaldeloterias/api';
 const TTL_ULTIMO = 300; // 5 min para o último concurso
 const TTL_ANTIGO = 60 * 60 * 24 * 30; // 30 dias para concursos já apurados
+// v1.6.3: um pedido à CAIXA que não responde em 8 s é dado como falho. Sem isso, uma loteria travada
+// (a API da Super Sete chegou a ficar fora enquanto as outras respondiam) segurava a fila de 4 da home.
+const TEMPO_MAX_CAIXA = 8000;
 
 // Busca direto na Caixa, sem passar pelo cache (usado para montar o histórico das estatísticas).
 async function buscarCaixaDireto(lot, concurso, env) {
@@ -31,6 +34,7 @@ async function baixarCaixa(lot, concurso, env) {
       'User-Agent': 'Mozilla/5.0 (compatible; PimbaBot/1.0; +https://pimba.com.br)',
     },
     cf: { cacheTtl: 60 },
+    signal: AbortSignal.timeout(TEMPO_MAX_CAIXA),
   });
   if (!resp.ok) throw new Error(`Caixa respondeu ${resp.status}`);
   const texto = await resp.text();
@@ -47,8 +51,17 @@ async function baixarCaixa(lot, concurso, env) {
 // - até TTL_ULTIMO: devolve direto do cache;
 // - depois disso: busca na Caixa (com 1 nova tentativa); se a Caixa falhar, devolve a última cópia boa
 //   marcada com `desatualizado: true`, em vez de "Resultado indisponível".
-// Custo: no máximo 1 match + 2 fetch + 1 put por loteria (44 subrequests para as 11, abaixo do limite de 50).
-const TTL_RESERVA = 60 * 60 * 24 * 7;
+// - v1.6.3: sem cópia boa (cache vazio naquele data center), usa o concurso mais novo do histórico das
+//   estatísticas (guardado 30 dias). Só busca o histórico quando a CAIXA falhou.
+// Custo normal: no máximo 1 match + 2 fetch + 1 put por loteria (44 subrequests para as 11, abaixo do limite de 50).
+const TTL_RESERVA = 60 * 60 * 24 * 30; // v1.6.3: era 7 dias; a CAIXA pode deixar uma loteria fora por dias
+
+async function reservaDoHistorico(lot) {
+  const emCache = await caches.default.match(new Request(`https://cache.pimba/hist/${lot.api}`)).catch(() => null);
+  const hist = emCache ? await emCache.json().catch(() => null) : null;
+  const h = Array.isArray(hist) ? hist.reduce((a, b) => (!a || b.c > a.c ? b : a), null) : null;
+  return h ? expandir(h, lot) : null;
+}
 const ESPERA_RETENTATIVA = 400;
 const esperar = (ms) => new Promise((ok) => setTimeout(ok, ms));
 
@@ -77,6 +90,8 @@ async function buscarUltimo(lot, env, ctx) {
     return dados;
   } catch (e) {
     if (salvo?.dados) return { ...salvo.dados, desatualizado: true };
+    const doHistorico = await reservaDoHistorico(lot);
+    if (doHistorico) return doHistorico;
     throw e;
   }
 }

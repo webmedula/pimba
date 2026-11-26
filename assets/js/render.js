@@ -1,4 +1,4 @@
-// Pimba v1.6.1 — normalização dos dados da Caixa e renderização (usado no Worker e no navegador)
+// Pimba v1.6.3 — normalização dos dados da Caixa e renderização (usado no Worker e no navegador)
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 export { esc };
@@ -84,10 +84,18 @@ export function bolas(lista, lot, cls = '') {
     .join('')}</ul>`;
 }
 
+export const SITE_CAIXA = 'https://loterias.caixa.gov.br/';
+
+/** v1.6.3 — aviso para resultado guardado que a CAIXA não conseguiu confirmar agora. */
+const avisoDesatualizado = (r, cls) =>
+  r.desatualizado
+    ? `<p class="${cls}">A CAIXA não está respondendo agora: este é o último resultado que conseguimos buscar e pode já haver um concurso mais novo.</p>`
+    : '';
+
 /** Bloco compacto (cards da home e lista de resultados). */
 export function renderCard(r, lot) {
   if (!r) {
-    return `<article class="card-res" style="--cor:${lot.cor}"><header><h3><a href="/resultados/${lot.slug}/">${esc(lot.nome)}</a></h3></header><p class="muted">Resultado indisponível agora. <a href="/resultados/${lot.slug}/" data-tentar="${lot.slug}">Tentar de novo</a></p></article>`;
+    return `<article class="card-res" style="--cor:${lot.cor}"><header><h3><a href="/resultados/${lot.slug}/">${esc(lot.nome)}</a></h3></header><p class="muted">A CAIXA não está respondendo para a ${esc(lot.nome)} agora. <a href="/resultados/${lot.slug}/" data-tentar="${lot.slug}">Tentar de novo</a> ou ver no <a href="${SITE_CAIXA}" target="_blank" rel="noopener">site da CAIXA</a>.</p></article>`;
   }
   let corpo = '';
   if (lot.tipo === 'loteca') {
@@ -110,6 +118,7 @@ export function renderCard(r, lot) {
   <p class="muted">Concurso ${fmtInt(r.concurso)} · ${esc(r.data)}</p>
   ${corpo}
   ${prox}
+  ${avisoDesatualizado(r, 'aviso-mini')}
   <a class="link-mais" href="/resultados/${lot.slug}/${r.concurso}/">Ver prêmios →</a>
 </article>`;
 }
@@ -135,7 +144,8 @@ export function renderResultado(r, lot) {
     }
   }
 
-  const premios = lot.tipo === 'federal' ? '' : `<h2>Premiação</h2>
+  const premios = lot.tipo === 'federal' ? '' : !r.premios.length ? `<h2>Premiação</h2>
+<p class="muted">A premiação deste concurso não está disponível agora. Confira no <a href="${SITE_CAIXA}" target="_blank" rel="noopener">site oficial das Loterias CAIXA</a>.</p>` : `<h2>Premiação</h2>
 <div class="tabela-rolagem"><table class="tabela premios"><thead><tr><th>Faixa</th><th>Ganhadores</th><th>Prêmio</th></tr></thead><tbody>${r.premios
     .map((p) => `<tr data-faixa="${esc(p.descricao)}"><td>${esc(p.descricao)}</td><td>${p.ganhadores ? fmtInt(p.ganhadores) : 'Não houve'}</td><td>${p.ganhadores ? brl(p.valor) : '—'}</td></tr>`)
     .join('')}</tbody></table></div>`;
@@ -157,7 +167,7 @@ export function renderResultado(r, lot) {
   ${!r.ultimo ? `<a href="/resultados/${lot.slug}/${r.concurso + 1}/" rel="next">Concurso ${fmtInt(r.concurso + 1)} →</a>` : `<span class="muted">Último resultado</span>`}
 </nav>`;
 
-  return `<div class="res-topo" style="--cor:${lot.cor}">
+  return `${avisoDesatualizado(r, 'aviso')}<div class="res-topo" style="--cor:${lot.cor}">
   <p class="res-meta">Concurso <strong>${fmtInt(r.concurso)}</strong> · ${esc(r.data)}${r.local ? ` · ${esc(r.local)}` : ''}</p>
   ${sorteio}
 </div>
