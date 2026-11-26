@@ -214,6 +214,7 @@ h3 { font-size: 1.15rem; margin: 1.2em 0 .5em; }
 
 /* avisos e listas */
 .aviso { background: #fff8e6; border: 1px solid #ffe0a3; border-left: 5px solid var(--amarelo-2); border-radius: 12px; padding: 14px 18px; margin: 20px 0; }
+.aviso-mini { font-size: .85rem; color: #7a5200; background: #fff8e6; border-radius: 8px; padding: 6px 10px; margin: 8px 0 0; }
 .lista-check { list-style: none; padding: 0; }
 .lista-check li { padding-left: 30px; position: relative; margin-bottom: 10px; }
 .lista-check li::before { content: '✓'; position: absolute; left: 0; top: 0; width: 22px; height: 22px; border-radius: 50%; background: var(--navy); color: var(--amarelo); display: grid; place-items: center; font-size: .75rem; font-weight: 800; }

@@ -1,4 +1,4 @@
-// Pimba v1.5.0 — estatísticas dos últimos concursos (cálculo e HTML; usado no Worker, no navegador e nos testes)
+// Pimba v1.6.3 — estatísticas dos últimos concursos (cálculo e HTML; usado no Worker, no navegador e nos testes)
 // Estatística descreve o passado. Cada sorteio é independente: nada aqui aumenta a chance de ganhar.
 import { esc, fmtInt } from './render.js';
 
@@ -16,6 +16,19 @@ export const compactar = (r) => ({
   ...(r.dezenas2?.length ? { n2: r.dezenas2 } : {}),
   ...(r.trevos?.length ? { t: r.trevos } : {}),
   ...(r.timeMes ? { x: r.timeMes } : {}),
+});
+
+/**
+ * v1.6.3 — o inverso de compactar: monta um resultado mínimo (números, concurso e data, sem premiação) para
+ * mostrar quando a CAIXA não responde e não há outra cópia guardada. Sempre marcado como desatualizado.
+ */
+export const expandir = (h, lot) => ({
+  slug: lot.slug, nome: lot.nome, concurso: h.c, data: h.d || '',
+  dezenas: h.n || [], ordem: [], dezenas2: h.n2 || [], trevos: h.t || [], timeMes: h.x || '',
+  acumulado: false, premios: [], jogos: [], ganhadoresLocais: [], local: '', arrecadado: null,
+  anterior: h.c > 1 ? h.c - 1 : null, ultimo: true,
+  proximo: { concurso: h.c + 1, data: '', estimativa: null }, acumuladoEspecial: null,
+  desatualizado: true, parcial: true,
 });
 
 /** Aceita o parâmetro ?n= e devolve sempre uma janela válida. */
