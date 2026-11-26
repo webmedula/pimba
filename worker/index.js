@@ -1,4 +1,4 @@
-// Pimba v1.6.3 — Cloudflare Worker
+// Pimba v1.6.4 — Cloudflare Worker
 // - /.well-known/assetlinks.json → liga o app Android (TWA) ao site, a partir de SITE.app.sha256
 // - Serve os arquivos estáticos de dist/ (binding ASSETS)
 // - /api/resultado/:slug[/:concurso] e /api/resultados → proxy da API da Caixa, normalizado e com cache
@@ -12,7 +12,14 @@ import { SITE } from '../src/config.js';
 import { assetLinks } from '../scripts/app.mjs';
 import { JANELA_MAX, JANELA_PADRAO, compactar, expandir, calcularEstatisticas, janelaValida, renderEstatisticas, temEstatistica } from '../assets/js/stats.js';
 
-const CAIXA_BASE = 'https://servicebus2.caixa.gov.br/portaldeloterias/api';
+// v1.6.4: o próprio site da CAIXA (loterias.caixa.gov.br, arquivo /Style Library/json/params.txt) usa o servicebus3.
+// Em 26/11/2026 o servicebus2 dava erro 500 em toda consulta da Super Sete, enquanto o servicebus3 respondia.
+// Tenta o servicebus3 primeiro e, se falhar, o servicebus2.
+const CAIXA_BASES = [
+  'https://servicebus3.caixa.gov.br/portaldeloterias/api',
+  'https://servicebus2.caixa.gov.br/portaldeloterias/api',
+];
+const basesCaixa = (env) => (env.CAIXA_API_BASE ? [env.CAIXA_API_BASE] : CAIXA_BASES);
 const TTL_ULTIMO = 300; // 5 min para o último concurso
 const TTL_ANTIGO = 60 * 60 * 24 * 30; // 30 dias para concursos já apurados
 // v1.6.3: um pedido à CAIXA que não responde em 8 s é dado como falho. Sem isso, uma loteria travada
@@ -25,8 +32,7 @@ async function buscarCaixaDireto(lot, concurso, env) {
   return normalizar(raw, lot);
 }
 
-async function baixarCaixa(lot, concurso, env) {
-  const base = env.CAIXA_API_BASE || CAIXA_BASE;
+async function baixarCaixa(lot, concurso, env, base = basesCaixa(env)[0]) {
   const url = `${base}/${lot.api}${concurso ? `/${concurso}` : ''}`;
   const resp = await fetch(url, {
     headers: {
@@ -65,12 +71,14 @@ async function reservaDoHistorico(lot) {
 const ESPERA_RETENTATIVA = 400;
 const esperar = (ms) => new Promise((ok) => setTimeout(ok, ms));
 
+// A nova tentativa vai para o outro servidor da CAIXA (servicebus2), quando há; continua no máximo 2 fetch.
 async function baixarComRetentativa(lot, concurso, env) {
+  const bases = basesCaixa(env);
   try {
-    return await baixarCaixa(lot, concurso, env);
+    return await baixarCaixa(lot, concurso, env, bases[0]);
   } catch {
     await esperar(ESPERA_RETENTATIVA);
-    return baixarCaixa(lot, concurso, env);
+    return baixarCaixa(lot, concurso, env, bases[1] || bases[0]);
   }
 }
 
@@ -103,7 +111,7 @@ async function buscarCaixa(lot, concurso, env, ctx) {
   const emCache = await cache.match(chave);
   if (emCache) return emCache.json();
 
-  const raw = await baixarCaixa(lot, concurso, env);
+  const raw = await baixarComRetentativa(lot, concurso, env);
   const dados = normalizar(raw, lot);
   const ttl = !raw.ultimoConcurso ? TTL_ANTIGO : TTL_ULTIMO;
   ctx.waitUntil(

@@ -69,7 +69,7 @@ João Paulo (WebMedula) quer reformular o **pimba.com.br** para ganhar dinheiro 
 ### Arquitetura
 - `scripts/build.mjs` gera `dist/`: páginas, sitemap, robots, `_redirects` (URLs antigas do WooCommerce e cursos levam para `/`) e `_headers`.
 - `worker/index.js`:
-  - `/api/resultado/<loteria>[/<concurso>]` e `/api/resultados` buscam na API da CAIXA (`servicebus2.caixa.gov.br/portaldeloterias/api/<loteria>[/<n>]`), normalizam e guardam em cache (5 min para o último concurso, 30 dias para os antigos).
+  - `/api/resultado/<loteria>[/<concurso>]` e `/api/resultados` buscam na API da CAIXA (`servicebus3.caixa.gov.br/portaldeloterias/api/<loteria>[/<n>]`, o mesmo do site oficial; o `servicebus2` fica de reserva desde a v1.6.4), normalizam e guardam em cache (5 min para o último concurso, 30 dias para os antigos).
   - `/resultados/...` é renderizado com HTMLRewriter.
   - `www` redireciona para a raiz.
 - `assets/js/loterias.js`: preços (out/2026), dias de sorteio, regras e probabilidades calculadas (batem com as oficiais).

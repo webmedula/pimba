@@ -1,5 +1,12 @@
 # Changelog — Pimba
 
+## v1.6.4 — 2026-11-26
+Correção: a Super Sete continuava sem resultado na v1.6.3, embora o site da CAIXA já mostrasse o concurso 926.
+- **Causa:** o Pimba consultava o servidor `servicebus2.caixa.gov.br`, que devolve erro 500 em toda consulta da Super Sete (último concurso e concursos antigos). O próprio site das Loterias CAIXA usa outro servidor, o `servicebus3.caixa.gov.br` (está no arquivo `/Style Library/json/params.txt` deles), e ali a Super Sete responde normalmente
+- **Worker:** busca primeiro no `servicebus3`. Se ele falhar, a nova tentativa vai para o `servicebus2`. Continua no máximo 2 pedidos por loteria, dentro do limite do plano grátis. Vale para o último concurso e para concursos antigos
+- `CAIXA_API_BASE` (dados falsos em desenvolvimento) continua valendo sozinho
+- 5 testes novos (74 no total)
+
 ## v1.6.3 — 2026-11-26
 Correção: na página inicial só a Super Sete ficava com "Resultado indisponível agora", mesmo depois de "Tentar de novo".
 - **Causa:** a API da CAIXA parou de responder só para a Super Sete (o endereço `/supersete` e até concursos antigos, como `/supersete/700`, dão erro), enquanto Mega-Sena, Quina e as outras respondem normalmente. O site não tinha outra cópia guardada da Super Sete naquele servidor, então o card ficava vazio. O "Tentar de novo" ainda mandava para a página da Super Sete, que depende da mesma API e falhava igual
