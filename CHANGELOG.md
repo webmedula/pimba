@@ -1,5 +1,16 @@
 # Changelog — Pimba
 
+## v1.7.0 — 2026-11-28
+Revisão do AdSense: em 26/11/2026 o Google reprovou o site por "anúncios em telas com conteúdo replicado" e "conteúdo de baixo valor". Esta versão ataca as duas causas.
+- **Causa principal (conteúdo replicado):** cada concurso antigo tinha a própria página indexável (`/resultados/<loteria>/<concurso>/`), ligada pelos botões "← Concurso anterior". São dezenas de milhares de páginas iguais à do resultado oficial da CAIXA, só com outros números, e todas carregavam o script do AdSense. Agora essas páginas continuam funcionando para quem quer conferir um concurso antigo, mas saem do Google (`noindex,follow`) e não carregam anúncio
+- **Análise de cada concurso**, escrita pelo Pimba a partir do resultado (`assets/js/analise.js`): pares e ímpares, metade de baixo e de cima do volante, soma comparada com a média, sequências de números seguidos, números repetidos do concurso anterior, o número mais atrasado, e quanto o concurso pagou (vezes a aposta mínima, total de apostas premiadas, em quantos estados saiu). Cada padrão vem com a chance matemática de acontecer. Super Sete tem análise por coluna, Loteca por resultado dos jogos, Dupla Sena compara os dois sorteios. Já vem no HTML servido pelo Worker
+- **Texto próprio de cada loteria** na página de resultado (`conteudo/loterias.mjs`): história, o que ela tem de diferente, concurso especial, 3 perguntas frequentes próprias (com dados estruturados `FAQPage`) e link para o guia do blog. Nenhum parágrafo se repete entre loterias (teste garante)
+- **Quanto custa jogar com mais números:** tabela calculada por combinatória em cada loteria em que dá para marcar mais números (Mega-Sena, Lotofácil, Quina, Dupla Sena, Dia de Sorte, +Milionária), com preço e chance do prêmio principal
+- **Anúncio só onde há conteúdo:** o script do AdSense agora fica só na home, nas páginas de resultado de cada loteria, nas estatísticas de cada loteria, em Chances e nos artigos do blog. Saiu de conferidor, gerador, bolões, calendário, índices (resultados, estatísticas, blog), Sobre, Contato, Privacidade, Termos, Jogo responsável e páginas `noindex`
+- **Home e /resultados/ já chegam com os resultados no HTML** (antes vinham com "Carregando…" e dependiam do JavaScript). Se a CAIXA demorar mais de 3 s, a página sai como antes e o navegador completa. O `/` passou a rodar no Worker (`run_worker_first`)
+- Sobre e Privacidade explicam onde os anúncios aparecem
+- 8 testes novos (82 no total)
+
 ## v1.6.4 — 2026-11-26
 Correção: a Super Sete continuava sem resultado na v1.6.3, embora o site da CAIXA já mostrasse o concurso 926.
 - **Causa:** o Pimba consultava o servidor `servicebus2.caixa.gov.br`, que devolve erro 500 em toda consulta da Super Sete (último concurso e concursos antigos). O próprio site das Loterias CAIXA usa outro servidor, o `servicebus3.caixa.gov.br` (está no arquivo `/Style Library/json/params.txt` deles), e ali a Super Sete responde normalmente

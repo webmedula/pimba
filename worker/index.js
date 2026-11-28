@@ -1,13 +1,16 @@
-// Pimba v1.6.4 — Cloudflare Worker
+// Pimba v1.7.0 — Cloudflare Worker
 // - /.well-known/assetlinks.json → liga o app Android (TWA) ao site, a partir de SITE.app.sha256
 // - Serve os arquivos estáticos de dist/ (binding ASSETS)
 // - /api/resultado/:slug[/:concurso] e /api/resultados → proxy da API da Caixa, normalizado e com cache
 // - /api/estatisticas/:slug?n=50 → números mais/menos sorteados nos últimos N concursos (histórico em cache)
 // - /resultados/:slug/ e /resultados/:slug/:concurso/ → página renderizada no servidor (bom para SEO)
 // - /estatisticas/:slug/ → página de estatísticas renderizada no servidor
+// - v1.7.0: / e /resultados/ chegam com os cards já preenchidos; a página de cada loteria traz a análise do concurso;
+//   concursos antigos (/resultados/:slug/:concurso/) ficam fora do Google (noindex) e sem anúncio
 
 import { LOTERIAS, POR_SLUG } from '../assets/js/loterias.js';
-import { normalizar, renderResultado, seo } from '../assets/js/render.js';
+import { normalizar, renderCard, renderResultado, seo } from '../assets/js/render.js';
+import { renderAnalise } from '../assets/js/analise.js';
 import { SITE } from '../src/config.js';
 import { assetLinks } from '../scripts/app.mjs';
 import { JANELA_MAX, JANELA_PADRAO, compactar, expandir, calcularEstatisticas, janelaValida, renderEstatisticas, temEstatistica } from '../assets/js/stats.js';
@@ -62,9 +65,15 @@ async function baixarCaixa(lot, concurso, env, base = basesCaixa(env)[0]) {
 // Custo normal: no máximo 1 match + 2 fetch + 1 put por loteria (44 subrequests para as 11, abaixo do limite de 50).
 const TTL_RESERVA = 60 * 60 * 24 * 30; // v1.6.3: era 7 dias; a CAIXA pode deixar uma loteria fora por dias
 
-async function reservaDoHistorico(lot) {
+// Histórico das estatísticas que já está no cache (sem buscar nada na CAIXA). [] se não houver.
+async function historicoGuardado(lot) {
   const emCache = await caches.default.match(new Request(`https://cache.pimba/hist/${lot.api}`)).catch(() => null);
   const hist = emCache ? await emCache.json().catch(() => null) : null;
+  return Array.isArray(hist) ? hist : [];
+}
+
+async function reservaDoHistorico(lot) {
+  const hist = await historicoGuardado(lot);
   const h = Array.isArray(hist) ? hist.reduce((a, b) => (!a || b.c > a.c ? b : a), null) : null;
   return h ? expandir(h, lot) : null;
 }
@@ -245,6 +254,37 @@ async function paginaEstatisticas(req, url, env, ctx) {
   return new Response(resp.body, { status: 200, headers });
 }
 
+// Tira o script e os espaços do AdSense de uma página.
+const semAnuncio = (rw) =>
+  rw
+    .on('script[src*="adsbygoogle"]', { element: (el) => el.remove() })
+    .on('aside.ad-slot', { element: (el) => el.remove() });
+
+// v1.7.0 — home e /resultados/ com os cards do último concurso já no HTML (antes chegavam com "Carregando…" e só
+// eram preenchidos pelo navegador). Se a CAIXA demorar mais que TEMPO_MAX_CARDS, entrega a página como antes.
+const TEMPO_MAX_CARDS = 3000;
+async function paginaComCards(req, env, ctx) {
+  const template = await env.ASSETS.fetch(req);
+  if (!template.ok || !(template.headers.get('Content-Type') || '').includes('text/html')) return template;
+  const todos = await Promise.race([
+    emLotes(LOTERIAS, 4, (l) => buscarCaixa(l, null, env, ctx).catch(() => null)),
+    esperar(TEMPO_MAX_CARDS).then(() => null),
+  ]);
+  if (!todos || todos.every((d) => !d)) return template;
+  const cards = LOTERIAS.map((l, i) => renderCard(todos[i], l).replace('<article ', `<article data-card="${l.slug}" `)).join('');
+  const resp = new HTMLRewriter()
+    .on('#home-resultados', {
+      element: (el) => {
+        el.setAttribute('data-ssr', '1');
+        el.setInnerContent(cards, { html: true });
+      },
+    })
+    .transform(template);
+  const headers = new Headers(resp.headers);
+  headers.set('Cache-Control', todos.every((d) => d && !d.desatualizado) ? 'public, max-age=60' : 'no-store');
+  return new Response(resp.body, { status: 200, headers });
+}
+
 async function paginaResultado(req, url, env, ctx) {
   const m = url.pathname.match(/^\/resultados\/([a-z-]+)\/(?:(\d+)\/?)?$/);
   if (!m) return env.ASSETS.fetch(req);
@@ -262,18 +302,21 @@ async function paginaResultado(req, url, env, ctx) {
   } catch {
     // Sem dados: entrega o template e o navegador tenta buscar sozinho.
     if (n) {
-      return new HTMLRewriter()
+      return semAnuncio(new HTMLRewriter()
         .on('#resultado', { element: (el) => el.setAttribute('data-concurso', String(n)) })
-        .on('meta[name="robots"]', { element: (el) => el.setAttribute('content', 'noindex') })
+        .on('#analise', { element: (el) => el.setAttribute('data-concurso', String(n)) })
+        .on('meta[name="robots"]', { element: (el) => el.setAttribute('content', 'noindex,follow') }))
         .transform(template);
     }
     return template;
   }
+  const hist = await historicoGuardado(lot);
 
   const meta = seo(dados, lot);
   const canonical = `${url.origin}/resultados/${lot.slug}/${dados.concurso}/`;
   const html = renderResultado(dados, lot);
-  const resp = new HTMLRewriter()
+  const analise = renderAnalise(dados, lot, hist);
+  let rw = new HTMLRewriter()
     .on('title', { element: (el) => el.setInnerContent(meta.title) })
     .on('meta[name="description"]', { element: (el) => el.setAttribute('content', meta.description) })
     .on('meta[property="og:title"]', { element: (el) => el.setAttribute('content', meta.title) })
@@ -286,7 +329,18 @@ async function paginaResultado(req, url, env, ctx) {
         el.setInnerContent(html, { html: true });
       },
     })
-    .transform(template);
+    .on('#analise', {
+      element: (el) => {
+        el.setAttribute('data-ssr', '1');
+        el.setInnerContent(analise, { html: true });
+      },
+    });
+  // v1.7.0: a página de um concurso específico repete a do último resultado com outros números. Para o Google
+  // (e para o AdSense) ela não é conteúdo novo: fica fora do índice, sem anúncio, mas os links continuam valendo.
+  if (n) {
+    rw = semAnuncio(rw.on('meta[name="robots"]', { element: (el) => el.setAttribute('content', 'noindex,follow') }));
+  }
+  const resp = rw.transform(template);
 
   const headers = new Headers(resp.headers);
   headers.set('Cache-Control', n && !dados.ultimo ? 'public, max-age=86400' : dados.desatualizado ? 'no-store' : 'public, max-age=60');
@@ -308,6 +362,7 @@ export default {
       return links ? json(links, 200, 3600) : json({ erro: 'App Android ainda sem impressão digital (SITE.app.sha256)' }, 404);
     }
     if (url.pathname.startsWith('/api/')) return api(url, env, ctx);
+    if (url.pathname === '/' || url.pathname === '/resultados/') return paginaComCards(req, env, ctx);
     if (url.pathname.startsWith('/resultados/')) return paginaResultado(req, url, env, ctx);
     if (url.pathname.startsWith('/estatisticas/')) return paginaEstatisticas(req, url, env, ctx);
     return env.ASSETS.fetch(req);

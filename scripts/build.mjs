@@ -14,6 +14,8 @@ import { manifesto, scriptModoApp, serviceWorker } from './app.mjs';
 import { versionarImports } from './versionar.mjs';
 import { dataLonga, ldArtigo, relacionados } from './blog.mjs';
 import { ARTIGOS, CATEGORIAS } from '../conteudo/blog/index.mjs';
+import { TEXTO_LOTERIA, REVISADO } from '../conteudo/loterias.mjs';
+import { comb } from '../assets/js/analise.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = join(ROOT, 'dist');
@@ -59,7 +61,9 @@ const ctaWhats = () =>
     ? `<section class="cta-whats"><div class="wrap"><div><h2>Resultado no seu WhatsApp</h2><p>Receba os números assim que saírem e os bolões da semana. Sem spam.</p></div><a class="btn btn-whats" href="${esc(SITE.whatsappLista)}" target="_blank" rel="noopener">Quero receber</a></div></section>`
     : '';
 
-function layout({ titulo, descricao, rota, corpo, scripts = [], extraHead = '', robots = 'index,follow', ogTipo = 'website' }) {
+// v1.7.0: `anuncios: false` tira o script do AdSense da página. Telas de ferramenta, navegação, institucionais e
+// páginas finas não carregam anúncio (política do AdSense: anúncio só onde há conteúdo do editor).
+function layout({ titulo, descricao, rota, corpo, scripts = [], extraHead = '', robots = 'index,follow', ogTipo = 'website', anuncios = true }) {
   const canonical = `${SITE.url}${rota}`;
   const navHtml = NAV.map(([href, txt]) => `<a href="${href}"${rota.startsWith(href) ? ' aria-current="page"' : ''}>${txt}</a>`).join('');
   return `<!doctype html>
@@ -90,7 +94,7 @@ ${scriptModoApp(SITE)}
 <link rel="preload" href="/assets/fonts/outfit.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/assets/css/style.css?v=${V}">
 ${SITE.googleAnalyticsId ? `<script async src="https://www.googletagmanager.com/gtag/js?id=${SITE.googleAnalyticsId}"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','${SITE.googleAnalyticsId}');</script>` : ''}
-${scriptAdsense(SITE)}
+${anuncios && robots.startsWith('index') ? scriptAdsense(SITE) : ''}
 ${extraHead}
 </head>
 <body>
@@ -259,6 +263,7 @@ salvar('/resultados', layout({
   descricao: 'Últimos resultados de todas as loterias da CAIXA: Mega-Sena, Lotofácil, Quina, Lotomania, Timemania, Dupla Sena, Dia de Sorte, Super Sete, +Milionária, Federal e Loteca.',
   rota: '/resultados/',
   scripts: ['home.js'],
+  anuncios: false,
   corpo: `
 <section class="secao">
   <div class="wrap">
@@ -273,14 +278,39 @@ salvar('/resultados', layout({
 }), { prioridade: '0.9' });
 
 // ---------- RESULTADOS (uma por loteria) ----------
+// v1.7.0: cada página tem texto próprio (conteudo/loterias.mjs), a tabela de quanto custa jogar mais números,
+// perguntas frequentes da loteria e a análise do concurso (assets/js/analise.js), tudo no HTML servido.
+const NUMERO_UNIVERSO = (l) => l.max - l.min + 1;
+
+/** Tabela "quanto custa jogar mais números", calculada por combinatória (só loterias em que dá para marcar mais). */
+function tabelaMaisNumeros(l) {
+  if (l.tipo !== 'dezenas' || !l.preco || !(l.escolheMax > l.escolhe)) return '';
+  const total = comb(NUMERO_UNIVERSO(l), l.sorteia) * (l.trevos ? comb(6, 2) : 1);
+  const ate = Math.min(l.escolheMax, l.escolhe + 6);
+  const linhas = [];
+  for (let k = l.escolhe; k <= ate; k++) {
+    const apostas = comb(k, l.escolhe);
+    const chance = total / comb(k, l.sorteia);
+    linhas.push(`<tr><td>${k}</td><td>${fmtInt(apostas)}</td><td>${brl(apostas * l.preco)}</td><td>1 em ${fmtInt(Math.round(chance))}</td></tr>`);
+  }
+  return `<h3>Quanto custa jogar com mais números</h3>
+        <p>Cada número a mais no volante faz a aposta valer por várias apostas simples ao mesmo tempo. O preço sobe na mesma proporção que a chance${l.trevos ? ' (com 2 trevos marcados)' : ''}:</p>
+        <div class="tabela-rolagem"><table class="tabela"><thead><tr><th>Números</th><th>Apostas</th><th>Preço</th><th>Chance${l.duplo ? " (por sorteio)" : ""}</th></tr></thead><tbody>${linhas.join('')}</tbody></table></div>
+        <p class="muted small">Conta feita pelo Pimba: preço da aposta mínima vezes o número de apostas simples equivalentes. ${l.escolheMax > ate ? `Dá para marcar até ${l.escolheMax} números. ` : ''}Bolões costumam usar essas apostas maiores, com o custo dividido entre as cotas.</p>`;
+}
+
 for (const l of LOTERIAS) {
   const rota = `/resultados/${l.slug}/`;
   const temConferidor = l.tipo === 'dezenas' || l.tipo === 'colunas';
+  const tx = TEXTO_LOTERIA[l.slug];
+  const artigo = tx?.artigo && ARTIGOS.find((a) => a.slug === tx.artigo);
+  const faq = tx?.faq || [];
   salvar(rota, layout({
     titulo: `Resultado da ${l.nome} — último concurso | Pimba`,
-    descricao: `Resultado da ${l.nome} do último concurso: números sorteados, ganhadores, prêmios por faixa e estimativa do próximo sorteio. Veja também como jogar e as chances.`,
+    descricao: `Resultado da ${l.nome} do último concurso com análise dos números, ganhadores e prêmios por faixa. Veja também como jogar, quanto custa e as chances reais.`,
     rota,
     scripts: ['resultado.js'],
+    extraHead: faq.length ? `<script type="application/ld+json">${JSON.stringify({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faq.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) })}</script>` : '',
     corpo: `
 <section class="secao">
   <div class="wrap layout-2">
@@ -290,18 +320,27 @@ for (const l of LOTERIAS) {
       <div id="resultado" class="resultado" data-slug="${l.slug}" aria-live="polite">
         <div class="carregando"><span></span><span></span><span></span> Buscando o resultado…</div>
       </div>
+      <div id="analise" data-slug="${l.slug}"></div>
       ${anuncio('resultado')}
       <section class="como-jogar">
+        ${tx ? `<h2>Sobre a ${esc(l.nome)}</h2>
+        ${tx.sobre.map((p) => `<p>${esc(p)}</p>`).join('\n        ')}
+        ${tx.especial ? `<p><strong>Concurso especial:</strong> ${esc(tx.especial)}</p>` : ''}` : ''}
         <h2>Como jogar na ${esc(l.nome)}</h2>
         <p>${esc(l.regra)}</p>
         <ul class="fatos">
           ${l.preco ? `<li><strong>Aposta mínima:</strong> ${brl(l.preco)}</li>` : ''}
           <li><strong>Sorteios:</strong> ${l.sorteios ? `<a href="/calendario/${l.slug}/">${esc(l.dias)}</a> (horário de Brasília)` : esc(l.dias)}</li>
           <li><strong>Onde jogar:</strong> lotéricas e portal/aplicativo Loterias CAIXA</li>
+          <li><strong>Prazo para receber:</strong> 90 dias depois do sorteio</li>
         </ul>
         <h3>Chances de ganhar</h3>
         ${tabelaOdds(l)}
-        <p class="muted small">Valores e dias podem mudar; a referência é sempre o site oficial das Loterias CAIXA.</p>
+        ${tabelaMaisNumeros(l)}
+        ${faq.length ? `<h2>Perguntas frequentes sobre a ${esc(l.nome)}</h2>
+        <section class="faq">${faq.map(([q, a]) => `<details><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`).join('')}</section>` : ''}
+        ${artigo ? `<p>Quer se aprofundar? Leia o guia <a href="/blog/${artigo.slug}/">${esc(artigo.titulo)}</a>.</p>` : `<p>Veja como ela se compara com as outras no <a href="/blog/guia-das-loterias-da-caixa/">guia das loterias da CAIXA</a>.</p>`}
+        <p class="muted small">Texto da Equipe Pimba, revisado em ${dataLonga(REVISADO)}. Valores e dias podem mudar; a referência é sempre o site oficial das Loterias CAIXA.</p>
       </section>
     </div>
     <aside class="lateral">
@@ -323,6 +362,7 @@ salvar('/conferidor', layout({
   descricao: 'Confira sua aposta grátis: marque os números do seu jogo, escolha o concurso e veja na hora quantos acertou e quanto pagou cada faixa.',
   rota: '/conferidor/',
   scripts: ['conferidor.js'],
+  anuncios: false,
   corpo: `
 <section class="secao">
   <div class="wrap estreito">
@@ -345,7 +385,6 @@ salvar('/conferidor', layout({
       </div>
       <div id="conf-saida" aria-live="polite"></div>
     </div>
-    ${anuncio('conferidor')}
     <p class="muted small">O conferidor é uma ajuda. O resultado que vale é o oficial da CAIXA, conferido na lotérica ou no app Loterias CAIXA.</p>
   </div>
 </section>`,
@@ -364,6 +403,7 @@ salvar('/gerador', layout({
   descricao: 'Gere jogos para Mega-Sena, Lotofácil, Quina, Lotomania, Timemania, Dupla Sena, Dia de Sorte, Super Sete e +Milionária: aleatório puro, números quentes, frios ou equilibrado. Grátis e sem cadastro.',
   rota: '/gerador/',
   scripts: ['gerador.js'],
+  anuncios: false,
   extraHead: `<script type="application/ld+json">${JSON.stringify({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faqGerador.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) })}</script>`,
   corpo: `
 <section class="secao">
@@ -391,7 +431,6 @@ salvar('/gerador', layout({
       <p class="small"><a id="ger-link-est" href="/estatisticas/" hidden>Ver as estatísticas</a></p>
       <div id="ger-saida" aria-live="polite"></div>
     </div>
-    ${anuncio('gerador')}
     <div class="aviso">
       <strong>Sem ilusão:</strong> em cada sorteio todos os números têm exatamente a mesma chance. Quentes, frios ou equilibrado são só formas divertidas de escolher: nenhum gerador, método ou "inteligência artificial" aumenta sua probabilidade de ganhar. <a href="/probabilidades/">Veja as chances reais</a>.
     </div>
@@ -419,6 +458,7 @@ salvar('/boloes', layout({
   titulo: 'Bolão da Mega-Sena, Lotofácil e Quina: como funciona | Pimba',
   descricao: 'Entenda como funciona o bolão oficial das loterias CAIXA: cotas, recibo, tarifa de serviço, onde comprar com segurança e como dividir o prêmio.',
   rota: '/boloes/',
+  anuncios: false,
   extraHead: ldLoterica ? `<script type="application/ld+json">${JSON.stringify(ldLoterica)}</script>` : '',
   corpo: `
 <section class="secao">
@@ -498,6 +538,7 @@ salvar('/estatisticas', layout({
   titulo: 'Estatísticas das loterias: números mais e menos sorteados | Pimba',
   descricao: 'Números que mais saíram, os que menos saíram e os atrasados da Mega-Sena, Lotofácil, Quina e outras loterias nos últimos concursos. Com aviso honesto: estatística não aumenta chance.',
   rota: '/estatisticas/',
+  anuncios: false,
   extraHead: ldFaqEst,
   corpo: `
 <section class="secao">
@@ -509,7 +550,6 @@ salvar('/estatisticas', layout({
     <div class="grid-ferr">
       ${comEstatistica.map((l) => `<a class="ferr ferr-lot" style="--cor:${l.cor}" href="/estatisticas/${l.slug}/"><h3>${esc(l.nome)}</h3><p>${l.tipo === 'colunas' ? 'Número mais sorteado em cada coluna' : `Frequência dos ${fmtInt(l.max - l.min + 1)} números${l.trevos ? ' e dos trevos' : l.extra === 'mes' ? ' e dos meses' : l.extra === 'time' ? ' e dos times' : ''}`}</p></a>`).join('')}
     </div>
-    ${anuncio('estatisticas')}
     <div class="estreito-col">
       <h2>Perguntas frequentes</h2>
       ${blocoFaqEst}
@@ -583,6 +623,7 @@ salvar('/calendario', layout({
   descricao: 'Que dia tem sorteio da Mega-Sena, Lotofácil, Quina e das outras loterias da CAIXA? Veja os dias e horários de cada uma, o que tem hoje e a data do próximo concurso.',
   rota: '/calendario/',
   scripts: ['calendario.js'],
+  anuncios: false,
   extraHead: `<script type="application/ld+json">${JSON.stringify({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faqCalendario.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) })}</script>`,
   corpo: `
 <section class="secao">
@@ -604,7 +645,6 @@ salvar('/calendario', layout({
       }).join('')}
     </div>
     ${notaCalendario}
-    ${anuncio('calendario')}
     <h2>Dias, horários e próximo concurso</h2>
     <div class="tabela-rolagem">
     <table class="tabela"><thead><tr><th>Loteria</th><th>Dias e horários</th><th>Próximo concurso</th></tr></thead><tbody>
@@ -628,6 +668,7 @@ for (const l of comCalendario) {
     descricao: `${resposta} Veja as próximas datas, a data oficial do próximo concurso e a estimativa de prêmio.`,
     rota,
     scripts: ['calendario.js'],
+    anuncios: false,
     extraHead: `<script type="application/ld+json">${JSON.stringify({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: [{ '@type': 'Question', name: `Que dia tem sorteio da ${l.nome}?`, acceptedAnswer: { '@type': 'Answer', text: resposta } }] })}</script>`,
     corpo: `
 <section class="secao">
@@ -648,7 +689,6 @@ for (const l of comCalendario) {
         <ol class="cal-proximos" id="cal-proximos" data-slug="${l.slug}"><li class="muted">${esc(l.dias)}</li></ol>
       </div>
       ${notaCalendario}
-      ${anuncio('calendario')}
       <section class="como-jogar">
         <h2>Como jogar na ${esc(l.nome)}</h2>
         <p>${esc(l.regra)}</p>
@@ -676,6 +716,7 @@ salvar('/blog', layout({
   titulo: 'Blog do Pimba: guias, chances e dicas sobre as loterias da CAIXA',
   descricao: 'Artigos para jogar sabendo o que está fazendo: como jogar em cada loteria, como calcular as chances, como funciona o bolão, como receber o prêmio e como fugir de golpes.',
   rota: '/blog/',
+  anuncios: false,
   extraHead: `<script type="application/ld+json">${JSON.stringify({ '@context': 'https://schema.org', '@type': 'Blog', name: 'Blog do Pimba', url: `${SITE.url}/blog/`, inLanguage: 'pt-BR', blogPost: ARTIGOS.map((a) => ({ '@type': 'BlogPosting', headline: a.titulo, url: `${SITE.url}/blog/${a.slug}/`, datePublished: a.data })) })}</script>`,
   corpo: `
 <section class="secao">
@@ -687,7 +728,6 @@ salvar('/blog', layout({
       const lista = ARTIGOS.filter((a) => a.categoria === cat);
       return lista.length ? `<h2>${esc(cat)}</h2><div class="grid-blog">${lista.map((a) => cardArtigo(a, 'h3')).join('')}</div>` : '';
     }).join('\n')}
-    ${anuncio('blog')}
   </div>
 </section>`,
 }), { prioridade: '0.7', lastmod: ultimaData });
@@ -723,7 +763,7 @@ for (const a of ARTIGOS) {
 // ---------- PÁGINAS INSTITUCIONAIS ----------
 const pagTexto = (rota, titulo, descricao, h1, html, extraHead = '') =>
   salvar(rota, layout({
-    titulo: `${titulo} | Pimba`, descricao, rota: `${rota}/`, extraHead,
+    titulo: `${titulo} | Pimba`, descricao, rota: `${rota}/`, extraHead, anuncios: false,
     corpo: `<section class="secao"><div class="wrap estreito texto">${migalhas([['Início', '/'], [h1, `${rota}/`]])}<h1>${esc(h1)}</h1>${html}</div></section>`,
   }), { prioridade: '0.3' });
 
@@ -749,7 +789,7 @@ pagTexto('/sobre', 'Sobre o Pimba', 'Quem faz o Pimba, de onde vêm os resultado
 <h2>Quem escreve</h2>
 <p>Os textos do blog são escritos e revisados pela Equipe Pimba, com base nas regras oficiais publicadas pela CAIXA e em cálculos que qualquer pessoa pode refazer. Quando uma regra, preço ou calendário muda, atualizamos as páginas e indicamos a data da atualização.</p>
 <h2>Como o Pimba se mantém</h2>
-<p>O site é gratuito e se mantém com anúncios exibidos pelo Google AdSense. Os anúncios são identificados como "Publicidade" e não aparecem na página de bolões. Saiba como os anúncios usam cookies na <a href="/privacidade/">política de privacidade e cookies</a>.</p>
+<p>O site é gratuito e se mantém com anúncios exibidos pelo Google AdSense. Os anúncios são identificados como "Publicidade" e aparecem só nas páginas de conteúdo (resultados, estatísticas, chances e artigos), nunca nas ferramentas, nas páginas institucionais ou na página de bolões. Saiba como os anúncios usam cookies na <a href="/privacidade/">política de privacidade e cookies</a>.</p>
 <p>O Pimba também divulga os bolões oficiais de uma lotérica parceira credenciada pela CAIXA, a ${esc(SITE.parceiro?.nome || 'lotérica parceira')}. A compra das cotas acontece sempre no canal oficial da CAIXA ou na própria lotérica, com recibo oficial. Veja a página de <a href="/boloes/">bolões</a>.</p>
 <h2>Fale com a gente</h2>
 <p>Dúvidas, sugestões, correções ou parcerias: ${emailLink ? `escreva para ${emailLink} ou ` : ''}veja a página de <a href="/contato/">contato</a>.</p>`,
@@ -801,7 +841,7 @@ pagTexto('/privacidade', 'Política de privacidade e cookies', 'Como o Pimba tra
   <li>Com os cookies de publicidade, o Google e seus parceiros podem mostrar anúncios com base nas suas visitas ao Pimba e a outros sites da internet.</li>
   <li>Você pode desativar a publicidade personalizada nas <a href="https://adssettings.google.com" rel="noopener" target="_blank">Configurações de anúncios do Google</a>. Também pode desativar cookies de outros fornecedores de publicidade personalizada em <a href="https://www.aboutads.info/choices/" rel="noopener" target="_blank">aboutads.info</a>.</li>
   <li>Veja como o Google usa os dados dos sites parceiros em <a href="https://policies.google.com/technologies/partner-sites?hl=pt-BR" rel="noopener" target="_blank">policies.google.com/technologies/partner-sites</a>.</li>
-  <li>Os anúncios são do Google e de anunciantes. O Pimba não escolhe cada anúncio, não vende apostas e não tem relação com os anunciantes. Os anúncios não aparecem na página de bolões.</li>
+  <li>Os anúncios são do Google e de anunciantes. O Pimba não escolhe cada anúncio, não vende apostas e não tem relação com os anunciantes. Os anúncios aparecem só nas páginas de conteúdo, nunca nas ferramentas nem na página de bolões.</li>
 </ul>
 <h2>Estatísticas de visitas (Google Analytics)</h2>
 <p>Se ativado, o Google Analytics conta visitas e páginas mais vistas de forma agregada, para sabermos o que melhorar. Você pode bloqueá-lo com o <a href="https://tools.google.com/dlpage/gaoptout?hl=pt-BR" rel="noopener" target="_blank">complemento de desativação do Google Analytics</a>.</p>
