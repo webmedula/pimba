@@ -1,8 +1,10 @@
-// Pimba v1.0.0 — página de resultado: se o servidor não entregou pronto, busca no navegador
+// Pimba v1.7.0 — página de resultado: se o servidor não entregou pronto, busca no navegador (resultado e análise)
 import { POR_SLUG } from './loterias.js';
 import { renderResultado, seo } from './render.js';
+import { renderAnalise } from './analise.js';
 
 const el = document.getElementById('resultado');
+const analise = document.getElementById('analise');
 if (el && !el.dataset.ssr) {
   const lot = POR_SLUG[el.dataset.slug];
   const n = el.dataset.concurso || new URLSearchParams(location.search).get('concurso') || '';
@@ -10,6 +12,7 @@ if (el && !el.dataset.ssr) {
     .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
     .then((d) => {
       el.innerHTML = renderResultado(d, lot);
+      if (analise && !analise.dataset.ssr) analise.innerHTML = renderAnalise(d, lot);
       const h = document.querySelector('.h1-concurso');
       if (h) h.textContent = ` — concurso ${d.concurso}`;
       document.title = seo(d, lot).title;

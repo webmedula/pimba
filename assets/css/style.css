@@ -158,6 +158,11 @@ h3 { font-size: 1.15rem; margin: 1.2em 0 .5em; }
 .carregando span:nth-child(3) { animation-delay: .3s; margin-right: 6px; }
 @keyframes pula { 50% { transform: translateY(-8px); } }
 .como-jogar { margin-top: 32px; }
+/* v1.7.0 — análise do concurso */
+.analise { background: #fff; border: 1px solid var(--borda); border-radius: var(--raio); padding: 6px 22px 10px; margin: 24px 0; }
+.analise h3 { margin-bottom: 4px; }
+.analise p { margin: 8px 0; }
+#analise:empty { display: none; }
 .fatos { padding-left: 18px; }
 .lateral { display: flex; flex-direction: column; gap: 12px; position: sticky; top: 84px; }
 @media (max-width: 920px) { .lateral { position: static; } }
